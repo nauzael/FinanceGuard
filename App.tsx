@@ -25,7 +25,9 @@ import {
   Download,
   Upload,
   Trash2,
-  TrendingUp
+  TrendingUp,
+  Image as ImageIcon,
+  Eye
 } from 'lucide-react';
 import { StorageService } from './services/storage';
 import { 
@@ -188,10 +190,14 @@ export default function App() {
   const [isEditAccountOpen, setIsEditAccountOpen] = useState(false);
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [imageViewOpen, setImageViewOpen] = useState<string | null>(null);
   
   // Selection States
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<BankAccount | null>(null);
+
+  // Form Previews
+  const [formImagePreview, setFormImagePreview] = useState<string | null>(null);
 
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -213,7 +219,7 @@ export default function App() {
             color: '#22c55e'
         };
         StorageService.addAccount(defaultCash);
-        setAccounts([defaultCash]);
+        setAccounts([defaultCash, ...allAccounts]);
     } else {
         setAccounts(allAccounts);
     }
@@ -246,6 +252,17 @@ export default function App() {
   };
 
   // --- Actions ---
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setFormImagePreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+    }
+  };
 
   const handleExportData = () => {
     const data = StorageService.exportData();
@@ -369,29 +386,19 @@ export default function App() {
     const accountId = (form.elements.namedItem('account') as HTMLSelectElement).value;
     const date = new Date(dateStr).getTime();
     
-    const fileInput = form.elements.namedItem('evidence') as HTMLInputElement;
+    StorageService.addTransaction({
+        id: crypto.randomUUID(),
+        type: TransactionType.EXPENSE,
+        amount,
+        description: desc,
+        date,
+        evidenceUrl: formImagePreview || undefined,
+        accountId: accountId || undefined
+    });
     
-    const processTransaction = (imgUrl?: string) => {
-        StorageService.addTransaction({
-            id: crypto.randomUUID(),
-            type: TransactionType.EXPENSE,
-            amount,
-            description: desc,
-            date,
-            evidenceUrl: imgUrl,
-            accountId: accountId || undefined
-        });
-        setIsAddExpenseOpen(false);
-        refreshData();
-    };
-
-    if (fileInput && fileInput.files && fileInput.files[0]) {
-        const reader = new FileReader();
-        reader.onloadend = () => processTransaction(reader.result as string);
-        reader.readAsDataURL(fileInput.files[0]);
-    } else {
-        processTransaction();
-    }
+    setIsAddExpenseOpen(false);
+    setFormImagePreview(null);
+    refreshData();
   };
 
   const handleAddContact = (e: React.FormEvent) => {
@@ -448,36 +455,26 @@ export default function App() {
 
     const totalAmount = amount + (amount * (interest / 100));
 
-    const processLoan = (imgUrl?: string) => {
-         const newLoan: Loan = {
-            id: crypto.randomUUID(),
-            contactId,
-            type,
-            originalAmount: amount,
-            interestRate: interest,
-            totalAmountWithInterest: totalAmount,
-            remainingAmount: totalAmount,
-            startDate: new Date(dateStr).getTime(),
-            dueDate: dueDateStr ? new Date(dueDateStr).getTime() : undefined,
-            status: LoanStatus.ACTIVE,
-            description: desc,
-            evidenceUrl: imgUrl,
-            accountId: accountId || undefined
-        };
-
-        StorageService.addLoan(newLoan);
-        setIsAddLoanOpen(false);
-        refreshData();
+    const newLoan: Loan = {
+        id: crypto.randomUUID(),
+        contactId,
+        type,
+        originalAmount: amount,
+        interestRate: interest,
+        totalAmountWithInterest: totalAmount,
+        remainingAmount: totalAmount,
+        startDate: new Date(dateStr).getTime(),
+        dueDate: dueDateStr ? new Date(dueDateStr).getTime() : undefined,
+        status: LoanStatus.ACTIVE,
+        description: desc,
+        evidenceUrl: formImagePreview || undefined,
+        accountId: accountId || undefined
     };
 
-    const fileInput = form.elements.namedItem('evidence') as HTMLInputElement;
-    if (fileInput && fileInput.files && fileInput.files[0]) {
-        const reader = new FileReader();
-        reader.onloadend = () => processLoan(reader.result as string);
-        reader.readAsDataURL(fileInput.files[0]);
-    } else {
-        processLoan();
-    }
+    StorageService.addLoan(newLoan);
+    setIsAddLoanOpen(false);
+    setFormImagePreview(null);
+    refreshData();
   };
 
   const handleAddPayment = (e: React.FormEvent) => {
@@ -489,29 +486,20 @@ export default function App() {
     const dateStr = (form.elements.namedItem('date') as HTMLInputElement).value;
     const accountId = (form.elements.namedItem('account') as HTMLSelectElement).value;
 
-    const processPayment = (imgUrl?: string) => {
-        StorageService.registerLoanPayment(
-            selectedLoan.id, 
-            amount, 
-            new Date(dateStr).getTime(), 
-            accountId || undefined, 
-            imgUrl
-        );
-        setIsAddPaymentOpen(false);
-        const updatedLoans = StorageService.getLoans();
-        const updated = updatedLoans.find(l => l.id === selectedLoan.id) || null;
-        setSelectedLoan(updated);
-        refreshData();
-    }
-
-    const fileInput = form.elements.namedItem('evidence') as HTMLInputElement;
-    if (fileInput && fileInput.files && fileInput.files[0]) {
-        const reader = new FileReader();
-        reader.onloadend = () => processPayment(reader.result as string);
-        reader.readAsDataURL(fileInput.files[0]);
-    } else {
-        processPayment();
-    }
+    StorageService.registerLoanPayment(
+        selectedLoan.id, 
+        amount, 
+        new Date(dateStr).getTime(), 
+        accountId || undefined, 
+        formImagePreview || undefined
+    );
+    
+    setIsAddPaymentOpen(false);
+    setFormImagePreview(null);
+    const updatedLoans = StorageService.getLoans();
+    const updated = updatedLoans.find(l => l.id === selectedLoan.id) || null;
+    setSelectedLoan(updated);
+    refreshData();
   };
 
   // --- Sub-Components for Views ---
@@ -642,7 +630,10 @@ export default function App() {
                                     {t.type === TransactionType.EXPENSE ? <Minus size={14}/> : t.type === TransactionType.INCOME ? <TrendingUp size={14}/> : <DollarSign size={14}/>}
                                 </div>
                                 <div>
-                                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200 line-clamp-1">{t.description}</p>
+                                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200 line-clamp-1 flex items-center gap-1.5">
+                                        {t.description}
+                                        {t.evidenceUrl && <ImageIcon size={12} className="text-brand-500" />}
+                                    </p>
                                     <p className="text-xs text-slate-400">{new Date(t.date).toLocaleDateString()}</p>
                                 </div>
                             </div>
@@ -650,11 +641,18 @@ export default function App() {
                                  <span className={`text-sm font-bold ${t.type === TransactionType.EXPENSE || t.type === TransactionType.LOAN_GIVEN ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                                     {t.type === TransactionType.EXPENSE || t.type === TransactionType.LOAN_GIVEN ? '-' : '+'}${t.amount.toLocaleString()}
                                 </span>
-                                {t.accountId && (
-                                    <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-slate-500">
-                                        {accounts.find(a => a.id === t.accountId)?.bank}
-                                    </span>
-                                )}
+                                <div className="flex items-center gap-2">
+                                    {t.evidenceUrl && (
+                                        <button onClick={() => setImageViewOpen(t.evidenceUrl!)} className="p-1 rounded bg-brand-50 dark:bg-brand-900/20 text-brand-600">
+                                            <Eye size={10} />
+                                        </button>
+                                    )}
+                                    {t.accountId && (
+                                        <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-slate-500">
+                                            {accounts.find(a => a.id === t.accountId)?.bank}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ))
@@ -684,7 +682,10 @@ export default function App() {
                                 <Minus size={14}/>
                             </div>
                             <div>
-                                <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{t.description}</p>
+                                <p className="text-sm font-medium text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                                    {t.description}
+                                    {t.evidenceUrl && <ImageIcon size={12} className="text-brand-500" />}
+                                </p>
                                 <p className="text-xs text-slate-400">{new Date(t.date).toLocaleDateString()}</p>
                             </div>
                         </div>
@@ -692,11 +693,18 @@ export default function App() {
                             <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
                                 ${t.amount.toLocaleString()}
                             </span>
-                            {t.accountId && (
-                                <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-slate-500">
-                                    {accounts.find(a => a.id === t.accountId)?.bank}
-                                </span>
-                            )}
+                            <div className="flex items-center gap-2">
+                                {t.evidenceUrl && (
+                                    <button onClick={() => setImageViewOpen(t.evidenceUrl!)} className="p-1 rounded bg-brand-50 dark:bg-brand-900/20 text-brand-600">
+                                        <Eye size={10} />
+                                    </button>
+                                )}
+                                {t.accountId && (
+                                    <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-slate-500">
+                                        {accounts.find(a => a.id === t.accountId)?.bank}
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     </div>
                  ))
@@ -851,6 +859,18 @@ export default function App() {
                     </div>
                 </div>
 
+                {selectedLoan.evidenceUrl && (
+                    <div className="mb-4">
+                        <p className="text-[10px] text-slate-400 uppercase mb-1">Evidencia Inicial</p>
+                        <div className="relative h-24 w-full rounded-lg overflow-hidden border border-slate-100 dark:border-slate-800 cursor-pointer" onClick={() => setImageViewOpen(selectedLoan.evidenceUrl!)}>
+                            <img src={selectedLoan.evidenceUrl} className="w-full h-full object-cover" alt="Evidencia" />
+                            <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                                <Eye className="text-white" size={20} />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                         <span className="text-slate-600 dark:text-slate-300">Restante</span>
@@ -877,17 +897,27 @@ export default function App() {
             </h3>
             <div className="space-y-3">
                 {history.map(t => (
-                    <div key={t.id} className="bg-white dark:bg-slate-900 p-3 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400">
-                                {t.type === TransactionType.LOAN_GIVEN || t.type === TransactionType.LOAN_TAKEN ? <Wallet size={14}/> : <CheckCircle size={14}/>}
+                    <div key={t.id} className="bg-white dark:bg-slate-900 p-3 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col gap-2">
+                        <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400">
+                                    {t.type === TransactionType.LOAN_GIVEN || t.type === TransactionType.LOAN_TAKEN ? <Wallet size={14}/> : <CheckCircle size={14}/>}
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{t.description}</p>
+                                    <p className="text-xs text-slate-400">{new Date(t.date).toLocaleDateString()}</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{t.description}</p>
-                                <p className="text-xs text-slate-400">{new Date(t.date).toLocaleDateString()}</p>
-                            </div>
+                            <span className="font-bold text-sm text-slate-800 dark:text-slate-200">${t.amount.toLocaleString()}</span>
                         </div>
-                        <span className="font-bold text-sm text-slate-800 dark:text-slate-200">${t.amount.toLocaleString()}</span>
+                        {t.evidenceUrl && (
+                            <div className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-100 dark:border-slate-800 cursor-pointer" onClick={() => setImageViewOpen(t.evidenceUrl!)}>
+                                <div className="w-10 h-10 rounded overflow-hidden border border-slate-200 dark:border-slate-700">
+                                    <img src={t.evidenceUrl} className="w-full h-full object-cover" alt="Pago" />
+                                </div>
+                                <span className="text-xs text-slate-500 font-medium">Ver comprobante de pago</span>
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>
@@ -978,6 +1008,17 @@ export default function App() {
         </button>
       </nav>
 
+      {/* Visor de Imagen Full Screen */}
+      {imageViewOpen && (
+          <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center p-4 animate-in fade-in" onClick={() => setImageViewOpen(null)}>
+              <button className="absolute top-6 right-6 p-2 bg-white/10 rounded-full text-white" onClick={() => setImageViewOpen(null)}>
+                  <X size={24} />
+              </button>
+              <img src={imageViewOpen} className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl" alt="Evidencia Expandida" />
+              <p className="text-white/60 text-sm mt-4">Toca en cualquier lugar para cerrar</p>
+          </div>
+      )}
+
       {/* Modals */}
 
       <ActionMenu 
@@ -1002,7 +1043,7 @@ export default function App() {
           </form>
       </Modal>
 
-      <Modal isOpen={isAddExpenseOpen} onClose={() => setIsAddExpenseOpen(false)} title="Registrar Gasto">
+      <Modal isOpen={isAddExpenseOpen} onClose={() => { setIsAddExpenseOpen(false); setFormImagePreview(null); }} title="Registrar Gasto">
         <form onSubmit={handleAddExpense} className="space-y-4">
             <Input name="amount" type="number" step="0.01" label="Monto" placeholder="0.00" required autoFocus />
             <Input name="description" type="text" label="Descripción" placeholder="Ej. Comida, Transporte" required />
@@ -1014,17 +1055,26 @@ export default function App() {
             <Input name="date" type="date" label="Fecha" defaultValue={new Date().toISOString().split('T')[0]} required />
             <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Evidencia (Opcional)</label>
-                <div className="relative border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-center cursor-pointer">
-                    <input type="file" name="evidence" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                    <Camera className="mx-auto text-slate-400 mb-2" />
-                    <span className="text-sm text-slate-500 dark:text-slate-400">Toca para tomar foto o subir</span>
+                <div className="relative border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-center cursor-pointer group">
+                    <input type="file" name="evidence" accept="image/*" onChange={handleImageSelect} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                    {formImagePreview ? (
+                        <div className="flex flex-col items-center">
+                            <img src={formImagePreview} className="h-24 w-auto rounded-lg mb-2 shadow-sm" alt="Preview" />
+                            <span className="text-xs text-brand-600 font-bold">Imagen Cargada Correctamente</span>
+                        </div>
+                    ) : (
+                        <>
+                            <Camera className="mx-auto text-slate-400 group-hover:text-brand-500 mb-2 transition-colors" />
+                            <span className="text-sm text-slate-500 dark:text-slate-400">Toca para tomar foto o subir</span>
+                        </>
+                    )}
                 </div>
             </div>
             <Button type="submit" className="w-full">Guardar Gasto</Button>
         </form>
       </Modal>
 
-      <Modal isOpen={isAddLoanOpen} onClose={() => setIsAddLoanOpen(false)} title="Nuevo Préstamo">
+      <Modal isOpen={isAddLoanOpen} onClose={() => { setIsAddLoanOpen(false); setFormImagePreview(null); }} title="Nuevo Préstamo">
         <form onSubmit={handleAddLoan} className="space-y-4">
             <Select name="type" label="Tipo de Movimiento">
                 <option value="LENT">Prestar (Me deben)</option>
@@ -1048,11 +1098,20 @@ export default function App() {
             <Input name="date" type="date" label="Fecha Inicio" defaultValue={new Date().toISOString().split('T')[0]} required />
             <Input name="description" type="text" label="Nota / Motivo" placeholder="Ej. Préstamo personal" />
             <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Evidencia (Opcional)</label>
-                <div className="relative border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-center cursor-pointer">
-                    <input type="file" name="evidence" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                    <Camera className="mx-auto text-slate-400 mb-2" />
-                    <span className="text-sm text-slate-500 dark:text-slate-400">Toca para tomar foto o subir</span>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Comprobante / Pagaré (Opcional)</label>
+                <div className="relative border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-center cursor-pointer group">
+                    <input type="file" name="evidence" accept="image/*" onChange={handleImageSelect} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                    {formImagePreview ? (
+                        <div className="flex flex-col items-center">
+                            <img src={formImagePreview} className="h-24 w-auto rounded-lg mb-2 shadow-sm" alt="Preview" />
+                            <span className="text-xs text-brand-600 font-bold">Imagen Cargada</span>
+                        </div>
+                    ) : (
+                        <>
+                            <Camera className="mx-auto text-slate-400 group-hover:text-brand-500 mb-2 transition-colors" />
+                            <span className="text-sm text-slate-500 dark:text-slate-400">Toca para adjuntar evidencia</span>
+                        </>
+                    )}
                 </div>
             </div>
             <Button type="submit" className="w-full">Crear Préstamo</Button>
@@ -1088,7 +1147,7 @@ export default function App() {
           )}
       </Modal>
 
-      <Modal isOpen={isAddPaymentOpen} onClose={() => setIsAddPaymentOpen(false)} title="Registrar Abono">
+      <Modal isOpen={isAddPaymentOpen} onClose={() => { setIsAddPaymentOpen(false); setFormImagePreview(null); }} title="Registrar Abono">
         <div className="mb-4 bg-brand-50 dark:bg-brand-900/20 p-3 rounded-lg text-brand-800 dark:text-brand-300 text-sm">
             <p>Deuda actual: <strong>${selectedLoan?.remainingAmount.toLocaleString()}</strong></p>
         </div>
@@ -1101,11 +1160,20 @@ export default function App() {
             </Select>
             <Input name="date" type="date" label="Fecha" defaultValue={new Date().toISOString().split('T')[0]} required />
             <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Evidencia (Opcional)</label>
-                <div className="relative border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-center cursor-pointer">
-                    <input type="file" name="evidence" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                    <Camera className="mx-auto text-slate-400 mb-2" />
-                    <span className="text-sm text-slate-500 dark:text-slate-400">Toca para tomar foto o subir</span>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Comprobante de Pago (Opcional)</label>
+                <div className="relative border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-center cursor-pointer group">
+                    <input type="file" name="evidence" accept="image/*" onChange={handleImageSelect} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                    {formImagePreview ? (
+                        <div className="flex flex-col items-center">
+                            <img src={formImagePreview} className="h-24 w-auto rounded-lg mb-2 shadow-sm" alt="Preview" />
+                            <span className="text-xs text-brand-600 font-bold">Comprobante Cargado</span>
+                        </div>
+                    ) : (
+                        <>
+                            <Camera className="mx-auto text-slate-400 group-hover:text-brand-500 mb-2 transition-colors" />
+                            <span className="text-sm text-slate-500 dark:text-slate-400">Toca para tomar foto del recibo</span>
+                        </>
+                    )}
                 </div>
             </div>
             <Button type="submit" className="w-full">Registrar Pago</Button>
