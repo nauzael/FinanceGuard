@@ -1,15 +1,39 @@
 
 import React from 'react';
-import { Landmark, Plus, Wallet, ArrowUpRight, ArrowDownLeft, AlertCircle, History, Minus, TrendingUp, DollarSign, Image as ImageIcon, Eye } from 'lucide-react';
+// Corrected import: replaced CalendarAlert with Bell as it does not exist in the current version of lucide-react
+import { Landmark, Plus, Wallet, ArrowUpRight, ArrowDownLeft, AlertCircle, History, Minus, TrendingUp, DollarSign, Image as ImageIcon, Eye, Bell } from 'lucide-react';
 import { Card, COLOMBIAN_BANKS } from '../components/UI.tsx';
-import { TransactionType, View } from '../types.ts';
+import { TransactionType, View, LoanStatus } from '../types.ts';
 
-export const Dashboard = ({ stats, accounts, contacts, recentTransactions, onAddAccount, onEditAccount, onSelectLoan, onSetView, onOpenImageView }: any) => {
+export const Dashboard = ({ stats, accounts, recentTransactions, loans, contacts, onAddAccount, onEditAccount, onSelectLoan, onSetView }: any) => {
     const bankAccounts = accounts.filter((a: any) => a.type !== 'CASH');
     const totalInBanks = bankAccounts.reduce((sum: number, a: any) => sum + a.balance, 0);
 
+    // Préstamos que vencen hoy
+    const todayStr = new Date().toLocaleDateString();
+    const loansDueToday = (loans || []).filter((l: any) => {
+        if (!l.dueDate || l.status === LoanStatus.PAID) return false;
+        return new Date(l.dueDate).toLocaleDateString() === todayStr;
+    });
+
     return (
         <div className="space-y-6 pb-20 animate-in fade-in duration-300">
+          
+          {/* Alerta de pagos hoy */}
+          {loansDueToday.length > 0 && (
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 flex gap-3 animate-pulse">
+                  <div className="p-2 bg-amber-100 dark:bg-amber-800 rounded-full h-fit text-amber-600 dark:text-amber-400">
+                    {/* Using Bell instead of CalendarAlert */}
+                    <Bell size={20} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-amber-900 dark:text-amber-100">¡Atención!</p>
+                    <p className="text-xs text-amber-800 dark:text-amber-300">Tienes {loansDueToday.length} pago(s) que vencen hoy. Toca para revisarlos.</p>
+                    <button onClick={() => onSetView(1)} className="mt-2 text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">Ver Préstamos</button>
+                  </div>
+              </div>
+          )}
+
           <div>
             <div className="flex justify-between items-center mb-3">
                  <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
@@ -24,7 +48,7 @@ export const Dashboard = ({ stats, accounts, contacts, recentTransactions, onAdd
                 {bankAccounts.map((acc: any) => {
                     const bankInfo = COLOMBIAN_BANKS.find(b => b.name === acc.bank) || { textColor: 'text-white' };
                     return (
-                        <div key={acc.id} onClick={() => onEditAccount(acc)} className="min-w-[160px] p-4 rounded-xl shadow-sm text-white flex flex-col justify-between relative overflow-hidden cursor-pointer active:scale-95 transition-transform" style={{ backgroundColor: acc.color }}>
+                        <div key={acc.id} onClick={() => onEditAccount?.(acc)} className="min-w-[160px] p-4 rounded-xl shadow-sm text-white flex flex-col justify-between relative overflow-hidden cursor-pointer active:scale-95 transition-transform" style={{ backgroundColor: acc.color }}>
                             <div className={`absolute top-0 right-0 p-2 opacity-30 ${bankInfo.textColor}`}>
                                 {acc.type === 'CASH' ? <Wallet size={40} /> : <Landmark size={40} />}
                             </div>
