@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Plus, 
@@ -23,7 +24,8 @@ import {
   Settings,
   Download,
   Upload,
-  Trash2
+  Trash2,
+  TrendingUp
 } from 'lucide-react';
 import { StorageService } from './services/storage';
 import { 
@@ -38,6 +40,7 @@ import {
 
 // --- Constants ---
 const COLOMBIAN_BANKS = [
+    { id: 'efectivo', name: 'Efectivo', color: '#22c55e', textColor: 'text-white' },
     { id: 'bancolombia', name: 'Bancolombia', color: '#FDDA24', textColor: 'text-black' },
     { id: 'nequi', name: 'Nequi', color: '#200020', textColor: 'text-white' },
     { id: 'daviplata', name: 'Daviplata', color: '#EF3340', textColor: 'text-white' },
@@ -47,7 +50,6 @@ const COLOMBIAN_BANKS = [
     { id: 'nubank', name: 'Nu', color: '#820AD1', textColor: 'text-white' },
     { id: 'lulo', name: 'Lulo Bank', color: '#00F000', textColor: 'text-black' },
     { id: 'cajasocial', name: 'Caja Social', color: '#004885', textColor: 'text-white' },
-    { id: 'efectivo', name: 'Efectivo', color: '#22c55e', textColor: 'text-white' },
     { id: 'otro', name: 'Otro', color: '#64748b', textColor: 'text-white' }
 ];
 
@@ -59,16 +61,17 @@ const Card = ({ children, className = '' }: { children?: React.ReactNode; classN
   </div>
 );
 
-const Button = ({ onClick, variant = 'primary', className = '', children, disabled = false }: any) => {
+const Button = ({ onClick, variant = 'primary', className = '', children, disabled = false, type = 'button' }: any) => {
   const baseStyle = "px-4 py-3 rounded-lg font-medium transition-all active:scale-95 flex items-center justify-center gap-2";
   const variants: any = {
     primary: "bg-brand-600 text-white shadow-brand-200 dark:shadow-none shadow-md hover:bg-brand-700 disabled:opacity-50",
     secondary: "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700",
     danger: "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30",
+    success: "bg-emerald-600 text-white shadow-emerald-200 hover:bg-emerald-700",
     outline: "border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
   };
   return (
-    <button disabled={disabled} onClick={onClick} className={`${baseStyle} ${variants[variant]} ${className}`}>
+    <button type={type} disabled={disabled} onClick={onClick} className={`${baseStyle} ${variants[variant]} ${className}`}>
       {children}
     </button>
   );
@@ -109,19 +112,35 @@ const Modal = ({ isOpen, onClose, title, children }: any) => {
   );
 };
 
-const ActionMenu = ({ isOpen, onClose, onAddExpense, onAddLoan }: any) => {
+const ActionMenu = ({ isOpen, onClose, onAddIncome, onAddExpense, onAddLoan }: any) => {
     if (!isOpen) return null;
     return (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
             <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-4 space-y-3 animate-in slide-in-from-bottom duration-200 mb-16 sm:mb-0" onClick={e => e.stopPropagation()}>
-                <h3 className="text-center font-bold text-slate-900 dark:text-slate-100 mb-2">Seleccionar Acción</h3>
-                <button onClick={() => { onAddExpense(); onClose(); }} className="w-full flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
-                    <div className="bg-white dark:bg-slate-800 p-2 rounded-full shadow-sm"><Minus size={20} /></div>
-                    <span className="font-bold">Registrar Gasto</span>
+                <h3 className="text-center font-bold text-slate-900 dark:text-slate-100 mb-2">¿Qué quieres registrar?</h3>
+                
+                <button onClick={() => { onAddIncome(); onClose(); }} className="w-full flex items-center gap-3 p-4 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors">
+                    <div className="bg-white dark:bg-slate-800 p-2 rounded-full shadow-sm text-emerald-500"><TrendingUp size={20} /></div>
+                    <div className="text-left">
+                        <span className="block font-bold">Registrar Ingreso</span>
+                        <span className="text-xs opacity-70">Aumenta tu saldo (Sueldo, regalo, etc.)</span>
+                    </div>
                 </button>
+
+                <button onClick={() => { onAddExpense(); onClose(); }} className="w-full flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
+                    <div className="bg-white dark:bg-slate-800 p-2 rounded-full shadow-sm text-red-500"><Minus size={20} /></div>
+                    <div className="text-left">
+                        <span className="block font-bold">Registrar Gasto</span>
+                        <span className="text-xs opacity-70">Disminuye tu saldo (Compras, servicios)</span>
+                    </div>
+                </button>
+
                 <button onClick={() => { onAddLoan(); onClose(); }} className="w-full flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
-                    <div className="bg-white dark:bg-slate-800 p-2 rounded-full shadow-sm"><DollarSign size={20} /></div>
-                    <span className="font-bold">Nuevo Préstamo</span>
+                    <div className="bg-white dark:bg-slate-800 p-2 rounded-full shadow-sm text-blue-500"><DollarSign size={20} /></div>
+                    <div className="text-left">
+                        <span className="block font-bold">Nuevo Préstamo</span>
+                        <span className="text-xs opacity-70">Dinero que prestas o te prestan</span>
+                    </div>
                 </button>
             </div>
         </div>
@@ -143,8 +162,8 @@ export default function App() {
   const [currentView, setCurrentView] = useState<View>(View.DASHBOARD);
   const [stats, setStats] = useState<DashboardStats>({ totalExpenses: 0, totalLoansGiven: 0, totalLoansTaken: 0, activeLoansCount: 0, totalBalance: 0 });
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]); // All transactions
-  const [loans, setLoans] = useState<Loan[]>([]); // All loans
+  const [transactions, setTransactions] = useState<Transaction[]>([]); 
+  const [loans, setLoans] = useState<Loan[]>([]); 
   const [activeLoans, setActiveLoans] = useState<Loan[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
@@ -160,6 +179,7 @@ export default function App() {
   });
 
   // Modal States
+  const [isAddIncomeOpen, setIsAddIncomeOpen] = useState(false);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [isAddLoanOpen, setIsAddLoanOpen] = useState(false);
   const [isAddContactOpen, setIsAddContactOpen] = useState(false);
@@ -180,13 +200,30 @@ export default function App() {
   const refreshData = () => {
     const allTrans = StorageService.getTransactions();
     const allLoans = StorageService.getLoans();
+    const allAccounts = StorageService.getAccounts();
+    
+    // Auto-create "Efectivo" if no accounts exist
+    if (allAccounts.length === 0) {
+        const defaultCash: BankAccount = {
+            id: 'default-cash',
+            name: 'Mi Efectivo',
+            bank: 'Efectivo',
+            type: 'CASH',
+            balance: 0,
+            color: '#22c55e'
+        };
+        StorageService.addAccount(defaultCash);
+        setAccounts([defaultCash]);
+    } else {
+        setAccounts(allAccounts);
+    }
+
     setStats(StorageService.getStats());
     setRecentTransactions(allTrans.slice(0, 10)); 
     setTransactions(allTrans);
     setLoans(allLoans);
     setActiveLoans(allLoans.filter(l => l.status !== LoanStatus.PAID));
     setContacts(StorageService.getContacts());
-    setAccounts(StorageService.getAccounts());
   };
 
   useEffect(() => {
@@ -242,7 +279,6 @@ export default function App() {
       }
     };
     reader.readAsText(file);
-    // Reset input
     e.target.value = '';
   };
 
@@ -303,6 +339,27 @@ export default function App() {
     refreshData();
   };
 
+  const handleAddIncome = (e: React.FormEvent) => {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const amount = parseFloat((form.elements.namedItem('amount') as HTMLInputElement).value);
+    const desc = (form.elements.namedItem('description') as HTMLInputElement).value;
+    const dateStr = (form.elements.namedItem('date') as HTMLInputElement).value;
+    const accountId = (form.elements.namedItem('account') as HTMLSelectElement).value;
+    const date = new Date(dateStr).getTime();
+    
+    StorageService.addTransaction({
+        id: crypto.randomUUID(),
+        type: TransactionType.INCOME,
+        amount,
+        description: desc,
+        date,
+        accountId: accountId || undefined
+    });
+    setIsAddIncomeOpen(false);
+    refreshData();
+  };
+
   const handleAddExpense = (e: React.FormEvent) => {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
@@ -312,7 +369,6 @@ export default function App() {
     const accountId = (form.elements.namedItem('account') as HTMLSelectElement).value;
     const date = new Date(dateStr).getTime();
     
-    // Image handling
     const fileInput = form.elements.namedItem('evidence') as HTMLInputElement;
     
     const processTransaction = (imgUrl?: string) => {
@@ -329,7 +385,7 @@ export default function App() {
         refreshData();
     };
 
-    if (fileInput.files && fileInput.files[0]) {
+    if (fileInput && fileInput.files && fileInput.files[0]) {
         const reader = new FileReader();
         reader.onloadend = () => processTransaction(reader.result as string);
         reader.readAsDataURL(fileInput.files[0]);
@@ -360,7 +416,6 @@ export default function App() {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
     
-    // Auto-register contact logic
     const contactName = (form.elements.namedItem('contactName') as HTMLInputElement).value.trim();
     if (!contactName) {
         alert("El nombre de la persona es obligatorio");
@@ -373,7 +428,6 @@ export default function App() {
     if (existingContact) {
         contactId = existingContact.id;
     } else {
-        // Create new contact
         const newContact: Contact = {
             id: crypto.randomUUID(),
             name: contactName,
@@ -417,7 +471,7 @@ export default function App() {
     };
 
     const fileInput = form.elements.namedItem('evidence') as HTMLInputElement;
-    if (fileInput.files && fileInput.files[0]) {
+    if (fileInput && fileInput.files && fileInput.files[0]) {
         const reader = new FileReader();
         reader.onloadend = () => processLoan(reader.result as string);
         reader.readAsDataURL(fileInput.files[0]);
@@ -444,7 +498,6 @@ export default function App() {
             imgUrl
         );
         setIsAddPaymentOpen(false);
-        // Refresh selected loan data
         const updatedLoans = StorageService.getLoans();
         const updated = updatedLoans.find(l => l.id === selectedLoan.id) || null;
         setSelectedLoan(updated);
@@ -452,7 +505,7 @@ export default function App() {
     }
 
     const fileInput = form.elements.namedItem('evidence') as HTMLInputElement;
-    if (fileInput.files && fileInput.files[0]) {
+    if (fileInput && fileInput.files && fileInput.files[0]) {
         const reader = new FileReader();
         reader.onloadend = () => processPayment(reader.result as string);
         reader.readAsDataURL(fileInput.files[0]);
@@ -471,7 +524,7 @@ export default function App() {
         <div className="flex justify-between items-center mb-3">
              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                 <Wallet size={16} className="text-brand-500" />
-                Mis Cuentas
+                Mis Cuentas y Efectivo
             </h3>
             <span className="text-sm font-bold text-slate-700 dark:text-slate-300">${stats.totalBalance.toLocaleString()}</span>
         </div>
@@ -488,11 +541,12 @@ export default function App() {
                 return (
                     <div 
                         key={acc.id} 
-                        className="min-w-[160px] p-4 rounded-xl shadow-sm text-white flex flex-col justify-between relative overflow-hidden"
+                        onClick={() => { setSelectedAccount(acc); setIsEditAccountOpen(true); }}
+                        className="min-w-[160px] p-4 rounded-xl shadow-sm text-white flex flex-col justify-between relative overflow-hidden cursor-pointer active:scale-95 transition-transform"
                         style={{ backgroundColor: acc.color }}
                     >
                         <div className={`absolute top-0 right-0 p-2 opacity-30 ${bankInfo.textColor}`}>
-                            <Landmark size={40} />
+                            {acc.type === 'CASH' ? <Wallet size={40} /> : <Landmark size={40} />}
                         </div>
                         <div className={bankInfo.textColor}>
                             <p className="text-xs font-medium opacity-90">{acc.bank}</p>
@@ -523,7 +577,7 @@ export default function App() {
         </Card>
       </div>
 
-      {/* Upcoming/Due - Simple Simulation */}
+      {/* Active Loans */}
       {activeLoans.length > 0 && (
         <div>
           <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
@@ -575,11 +629,13 @@ export default function App() {
                             <div className={`p-2 rounded-lg ${
                                 t.type === TransactionType.EXPENSE 
                                 ? 'bg-red-50 text-red-500 dark:bg-red-900/20 dark:text-red-400' 
+                                : t.type === TransactionType.INCOME
+                                ? 'bg-emerald-50 text-emerald-500 dark:bg-emerald-900/20 dark:text-emerald-400'
                                 : t.type === TransactionType.LOAN_PAYMENT 
                                 ? 'bg-blue-50 text-blue-500 dark:bg-blue-900/20 dark:text-blue-400' 
                                 : 'bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
                             }`}>
-                                {t.type === TransactionType.EXPENSE ? <Minus size={14}/> : <DollarSign size={14}/>}
+                                {t.type === TransactionType.EXPENSE ? <Minus size={14}/> : t.type === TransactionType.INCOME ? <TrendingUp size={14}/> : <DollarSign size={14}/>}
                             </div>
                             <div>
                                 <p className="text-sm font-medium text-slate-800 dark:text-slate-200 line-clamp-1">{t.description}</p>
@@ -661,7 +717,6 @@ export default function App() {
                 </Button>
             </div>
             
-            {/* Filter Tabs */}
             <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-lg mb-4">
                 {(['ALL', 'LENT', 'BORROWED'] as const).map(f => (
                     <button
@@ -727,10 +782,10 @@ export default function App() {
                 {accounts.map(acc => {
                      const bankInfo = COLOMBIAN_BANKS.find(b => b.name === acc.bank) || { textColor: 'text-white' };
                      return (
-                         <div key={acc.id} className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                         <div key={acc.id} onClick={() => { setSelectedAccount(acc); setIsEditAccountOpen(true); }} className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center justify-between cursor-pointer active:scale-95 transition-transform">
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold text-white shadow-sm" style={{ backgroundColor: acc.color }}>
-                                    <Landmark size={20} className={bankInfo.textColor} />
+                                    {acc.type === 'CASH' ? <Wallet size={20} className={bankInfo.textColor} /> : <Landmark size={20} className={bankInfo.textColor} />}
                                 </div>
                                 <div>
                                     <p className="font-bold text-slate-800 dark:text-slate-100">{acc.name}</p>
@@ -739,34 +794,11 @@ export default function App() {
                             </div>
                             <div className="flex items-center gap-3">
                                 <p className="font-bold text-slate-800 dark:text-slate-100 text-lg">${acc.balance.toLocaleString()}</p>
-                                <button 
-                                    onClick={() => { setSelectedAccount(acc); setIsEditAccountOpen(true); }}
-                                    className="p-2 text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-full transition-colors"
-                                >
-                                    <Pencil size={18} />
-                                </button>
+                                <ChevronRight className="text-slate-300" size={18} />
                             </div>
                          </div>
                      )
                 })}
-            </div>
-            
-            <div className="mt-8">
-                 <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-3">Movimientos por Cuenta</h3>
-                 {/* Here we could list transactions grouped by account, for now simple list */}
-                 <div className="space-y-3">
-                    {transactions.filter(t => t.accountId).slice(0, 10).map(t => (
-                        <div key={t.id} className="flex justify-between items-center p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-800">
-                            <div>
-                                <p className="text-sm font-medium dark:text-slate-200">{t.description}</p>
-                                <p className="text-xs text-slate-400">{accounts.find(a => a.id === t.accountId)?.name}</p>
-                            </div>
-                            <span className={`text-sm font-bold ${t.type === TransactionType.EXPENSE || t.type === TransactionType.LOAN_GIVEN ? 'text-red-600' : 'text-green-600'}`}>
-                                {t.type === TransactionType.EXPENSE || t.type === TransactionType.LOAN_GIVEN ? '-' : '+'}${t.amount.toLocaleString()}
-                            </span>
-                        </div>
-                    ))}
-                 </div>
             </div>
           </div>
       )
@@ -775,12 +807,8 @@ export default function App() {
   const LoanDetailView = () => {
     if (!selectedLoan) return null;
     const contact = contacts.find(c => c.id === selectedLoan.contactId);
-    
-    // Calculate progress
     const paidAmount = selectedLoan.totalAmountWithInterest - selectedLoan.remainingAmount;
     const progress = (paidAmount / selectedLoan.totalAmountWithInterest) * 100;
-    
-    // Find history for this loan
     const history = StorageService.getTransactions().filter(t => t.loanId === selectedLoan.id).sort((a,b) => b.date - a.date);
 
     return (
@@ -828,15 +856,6 @@ export default function App() {
                         <span>{selectedLoan.dueDate ? `Vence: ${new Date(selectedLoan.dueDate).toLocaleDateString()}` : 'Sin vencimiento'}</span>
                     </div>
                 </div>
-                {selectedLoan.accountId && (
-                    <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-                        <p className="text-xs text-slate-400">Desembolsado desde/hacia:</p>
-                        <div className="flex items-center gap-2 mt-1">
-                             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: accounts.find(a => a.id === selectedLoan.accountId)?.color }}></div>
-                             <span className="text-sm font-medium dark:text-slate-300">{accounts.find(a => a.id === selectedLoan.accountId)?.name}</span>
-                        </div>
-                    </div>
-                )}
             </Card>
 
             {selectedLoan.status === LoanStatus.ACTIVE && (
@@ -845,7 +864,9 @@ export default function App() {
                 </Button>
             )}
 
-            <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-3">Historial de Pagos</h3>
+            <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-3 text-sm flex items-center gap-2">
+                <History size={14}/> Historial de Pagos
+            </h3>
             <div className="space-y-3">
                 {history.map(t => (
                     <div key={t.id} className="bg-white dark:bg-slate-900 p-3 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm flex justify-between items-center">
@@ -858,25 +879,10 @@ export default function App() {
                                 <p className="text-xs text-slate-400">{new Date(t.date).toLocaleDateString()}</p>
                             </div>
                         </div>
-                        <div className="flex flex-col items-end">
-                            <span className="font-bold text-sm text-slate-800 dark:text-slate-200">${t.amount.toLocaleString()}</span>
-                            {t.evidenceUrl && (
-                                <span className="text-[10px] text-blue-500 flex items-center gap-1">
-                                    <Camera size={10} /> Evidencia
-                                </span>
-                            )}
-                        </div>
+                        <span className="font-bold text-sm text-slate-800 dark:text-slate-200">${t.amount.toLocaleString()}</span>
                     </div>
                 ))}
             </div>
-            
-            {/* View Evidence Modal (Simple implementation) */}
-             {selectedLoan.evidenceUrl && (
-                <div className="mt-6">
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Evidencia del Préstamo</p>
-                    <img src={selectedLoan.evidenceUrl} alt="Evidence" className="w-full h-40 object-cover rounded-lg border border-slate-200 dark:border-slate-700" />
-                </div>
-            )}
         </div>
     );
   };
@@ -910,8 +916,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 py-3 flex justify-between items-center transition-colors">
+      <header className="sticky top-0 z-30 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 py-3 flex justify-between items-center">
         <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white">
                 <Wallet size={18} />
@@ -919,30 +924,15 @@ export default function App() {
             <h1 className="font-bold text-xl tracking-tight text-slate-900 dark:text-white">FinanceGuard</h1>
         </div>
         <div className="flex items-center gap-2">
-            <button 
-                onClick={() => setIsSettingsOpen(true)}
-                className="p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                title="Configuración"
-            >
+            <button onClick={() => setIsSettingsOpen(true)} className="p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
                 <Settings size={20} />
             </button>
-            <button 
-                onClick={() => setCurrentView(View.CONTACTS)}
-                className="p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                title="Directorio"
-            >
-                <Users size={20} />
-            </button>
-            <button 
-            onClick={toggleTheme} 
-            className="p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-            >
+            <button onClick={toggleTheme} className="p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
                 {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
             </button>
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-md mx-auto p-4">
         {currentView === View.DASHBOARD && <Dashboard />}
         {currentView === View.EXPENSES && <ExpensesView />}
@@ -952,144 +942,68 @@ export default function App() {
         {currentView === View.ACCOUNTS && <AccountsView />}
       </main>
 
-      {/* Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 px-2 py-2 flex justify-between items-center z-40 safe-area-bottom transition-colors">
-        {/* Home */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 px-2 py-2 flex justify-between items-center z-40 safe-area-bottom">
         <button onClick={() => setCurrentView(View.DASHBOARD)} className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${currentView === View.DASHBOARD ? 'text-brand-600 dark:text-brand-500 bg-brand-50 dark:bg-brand-900/10' : 'text-slate-400 dark:text-slate-500'}`}>
             <Home size={24} strokeWidth={currentView === View.DASHBOARD ? 2.5 : 2} />
             <span className="text-[10px] font-medium">Inicio</span>
         </button>
         
-        {/* Accounts Tab */}
         <button onClick={() => setCurrentView(View.ACCOUNTS)} className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${currentView === View.ACCOUNTS ? 'text-brand-600 dark:text-brand-500 bg-brand-50 dark:bg-brand-900/10' : 'text-slate-400 dark:text-slate-500'}`}>
             <Wallet size={24} strokeWidth={currentView === View.ACCOUNTS ? 2.5 : 2} />
             <span className="text-[10px] font-medium">Cuentas</span>
         </button>
 
-        {/* Center Action Button */}
         <div className="relative -top-5">
             <button onClick={() => setIsActionMenuOpen(true)} className="bg-brand-600 text-white p-4 rounded-full shadow-lg shadow-brand-200 dark:shadow-brand-900/20 active:scale-95 transition-transform hover:bg-brand-700">
                 <Plus size={24} />
             </button>
         </div>
 
-        {/* Expenses Tab */}
         <button onClick={() => setCurrentView(View.EXPENSES)} className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${currentView === View.EXPENSES ? 'text-brand-600 dark:text-brand-500 bg-brand-50 dark:bg-brand-900/10' : 'text-slate-400 dark:text-slate-500'}`}>
             <CreditCard size={24} strokeWidth={currentView === View.EXPENSES ? 2.5 : 2} />
             <span className="text-[10px] font-medium">Gastos</span>
         </button>
 
-        {/* Loans Tab */}
         <button onClick={() => setCurrentView(View.LOANS)} className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${currentView === View.LOANS ? 'text-brand-600 dark:text-brand-500 bg-brand-50 dark:bg-brand-900/10' : 'text-slate-400 dark:text-slate-500'}`}>
             <DollarSign size={24} strokeWidth={currentView === View.LOANS ? 2.5 : 2} />
             <span className="text-[10px] font-medium">Préstamos</span>
         </button>
       </nav>
 
-      {/* --- Modals & Menus --- */}
+      {/* Modals */}
 
       <ActionMenu 
         isOpen={isActionMenuOpen} 
         onClose={() => setIsActionMenuOpen(false)} 
+        onAddIncome={() => setIsAddIncomeOpen(true)}
         onAddExpense={() => setIsAddExpenseOpen(true)}
         onAddLoan={() => setIsAddLoanOpen(true)}
       />
 
-      {/* Settings Modal */}
-      <Modal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} title="Configuración y Datos">
-          <div className="space-y-6">
-              
-              <div>
-                  <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-3">Copia de Seguridad</h3>
-                  <div className="grid grid-cols-2 gap-3">
-                      <button onClick={handleExportData} className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex flex-col items-center gap-2 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
-                          <Download size={24} />
-                          <span className="text-sm font-bold">Exportar</span>
-                      </button>
-                      
-                      <button onClick={handleImportClick} className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl flex flex-col items-center gap-2 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors">
-                          <Upload size={24} />
-                          <span className="text-sm font-bold">Importar</span>
-                      </button>
-                      <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        onChange={handleImportData} 
-                        accept=".json" 
-                        className="hidden" 
-                      />
-                  </div>
-                  <p className="text-xs text-slate-400 mt-2">
-                      Guarda un archivo .json en tu dispositivo para respaldar tu información o moverla a otro equipo.
-                  </p>
-              </div>
-
-              <div>
-                  <h3 className="text-sm font-bold text-red-500 uppercase mb-3">Zona de Peligro</h3>
-                  <button onClick={handleClearData} className="w-full p-3 border border-red-200 dark:border-red-900/50 rounded-xl flex items-center justify-center gap-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                      <Trash2 size={20} />
-                      <span className="font-bold">Borrar Todos los Datos</span>
-                  </button>
-              </div>
-
-          </div>
-      </Modal>
-
-      {/* Add Account Modal */}
-      <Modal isOpen={isAddAccountOpen} onClose={() => setIsAddAccountOpen(false)} title="Nueva Cuenta">
-          <form onSubmit={handleAddAccount} className="space-y-4">
-              <Select name="bank" label="Banco / Entidad" required>
-                  {COLOMBIAN_BANKS.map(b => (
-                      <option key={b.id} value={b.id}>{b.name}</option>
+      <Modal isOpen={isAddIncomeOpen} onClose={() => setIsAddIncomeOpen(false)} title="Registrar Ingreso">
+          <form onSubmit={handleAddIncome} className="space-y-4">
+              <Input name="amount" type="number" step="0.01" label="Monto" placeholder="0.00" required autoFocus />
+              <Input name="description" type="text" label="Descripción" placeholder="Ej. Sueldo, Venta, Regalo" required />
+              <Select name="account" label="Recibir en (Cuenta)" required>
+                  {accounts.map(a => (
+                      <option key={a.id} value={a.id}>{a.name} - ${a.balance.toLocaleString()}</option>
                   ))}
               </Select>
-              <Input name="name" type="text" label="Nombre de la Cuenta" placeholder="Ej. Ahorros Nómina" required />
-              <Select name="type" label="Tipo de Cuenta">
-                  <option value="SAVINGS">Ahorros</option>
-                  <option value="CURRENT">Corriente</option>
-                  <option value="DIGITAL">Billetera Digital</option>
-                  <option value="CASH">Efectivo</option>
-              </Select>
-              <Input name="balance" type="number" step="0.01" label="Saldo Inicial" placeholder="0.00" required />
-              <Button type="submit" className="w-full">Guardar Cuenta</Button>
+              <Input name="date" type="date" label="Fecha" defaultValue={new Date().toISOString().split('T')[0]} required />
+              <Button type="submit" variant="success" className="w-full">Guardar Ingreso</Button>
           </form>
       </Modal>
 
-      {/* Edit Account Modal */}
-      <Modal isOpen={isEditAccountOpen} onClose={() => { setIsEditAccountOpen(false); setSelectedAccount(null); }} title="Editar Cuenta">
-          {selectedAccount && (
-              <form onSubmit={handleEditAccount} className="space-y-4">
-                  <Select name="bank" label="Banco / Entidad" defaultValue={COLOMBIAN_BANKS.find(b => b.name === selectedAccount.bank)?.id || 'otro'} required>
-                      {COLOMBIAN_BANKS.map(b => (
-                          <option key={b.id} value={b.id}>{b.name}</option>
-                      ))}
-                  </Select>
-                  <Input name="name" type="text" label="Nombre de la Cuenta" defaultValue={selectedAccount.name} required />
-                  <Select name="type" label="Tipo de Cuenta" defaultValue={selectedAccount.type}>
-                      <option value="SAVINGS">Ahorros</option>
-                      <option value="CURRENT">Corriente</option>
-                      <option value="DIGITAL">Billetera Digital</option>
-                      <option value="CASH">Efectivo</option>
-                  </Select>
-                  <Input name="balance" type="number" step="0.01" label="Saldo" defaultValue={selectedAccount.balance} required />
-                  <Button type="submit" className="w-full">Actualizar Cuenta</Button>
-              </form>
-          )}
-      </Modal>
-
-      {/* Add Expense Modal */}
       <Modal isOpen={isAddExpenseOpen} onClose={() => setIsAddExpenseOpen(false)} title="Registrar Gasto">
         <form onSubmit={handleAddExpense} className="space-y-4">
             <Input name="amount" type="number" step="0.01" label="Monto" placeholder="0.00" required autoFocus />
             <Input name="description" type="text" label="Descripción" placeholder="Ej. Comida, Transporte" required />
             <Select name="account" label="Pagar desde (Cuenta)" required>
-                  <option value="">Seleccionar cuenta...</option>
                   {accounts.map(a => (
                       <option key={a.id} value={a.id}>{a.name} - ${a.balance.toLocaleString()}</option>
                   ))}
             </Select>
             <Input name="date" type="date" label="Fecha" defaultValue={new Date().toISOString().split('T')[0]} required />
-            
             <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Evidencia (Opcional)</label>
                 <div className="relative border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-center cursor-pointer">
@@ -1098,60 +1012,99 @@ export default function App() {
                     <span className="text-sm text-slate-500 dark:text-slate-400">Toca para tomar foto o subir</span>
                 </div>
             </div>
-
             <Button type="submit" className="w-full">Guardar Gasto</Button>
         </form>
       </Modal>
 
-      {/* Add Loan Modal */}
       <Modal isOpen={isAddLoanOpen} onClose={() => setIsAddLoanOpen(false)} title="Nuevo Préstamo">
         <form onSubmit={handleAddLoan} className="space-y-4">
             <Select name="type" label="Tipo de Movimiento">
                 <option value="LENT">Prestar (Me deben)</option>
                 <option value="BORROWED">Pedir Prestado (Debo)</option>
             </Select>
-            
             <div className="mb-4">
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Persona</label>
-                <input 
-                    list="contacts-list" 
-                    name="contactName"
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                    placeholder="Escribe el nombre o selecciona..."
-                    required
-                />
-                <datalist id="contacts-list">
-                    {contacts.map(c => <option key={c.id} value={c.name} />)}
-                </datalist>
+                <input list="contacts-list" name="contactName" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none" placeholder="Escribe el nombre..." required />
+                <datalist id="contacts-list">{contacts.map(c => <option key={c.id} value={c.name} />)}</datalist>
             </div>
-
             <Input name="amount" type="number" step="0.01" label="Monto" placeholder="0.00" required />
-
             <Select name="account" label="Cuenta (Origen/Destino)" required>
-                  <option value="">Seleccionar cuenta...</option>
                   {accounts.map(a => (
                       <option key={a.id} value={a.id}>{a.name} - ${a.balance.toLocaleString()}</option>
                   ))}
             </Select>
-            
             <div className="grid grid-cols-2 gap-4">
-                <Input name="interest" type="number" step="0.1" label="Interés %" placeholder="0" defaultValue="0" />
+                <Input name="interest" type="number" step="0.1" label="Interés %" defaultValue="0" />
                 <Input name="dueDate" type="date" label="Fecha Límite (Opcional)" />
             </div>
-
             <Input name="date" type="date" label="Fecha Inicio" defaultValue={new Date().toISOString().split('T')[0]} required />
             <Input name="description" type="text" label="Nota / Motivo" placeholder="Ej. Préstamo personal" />
-
             <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Pagaré / Evidencia</label>
-                <input type="file" name="evidence" accept="image/*" capture="environment" className="block w-full text-sm text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 dark:file:bg-brand-900/30 dark:file:text-brand-400 hover:file:bg-brand-100 dark:hover:file:bg-brand-900/50"/>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Evidencia (Opcional)</label>
+                <div className="relative border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-center cursor-pointer">
+                    <input type="file" name="evidence" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                    <Camera className="mx-auto text-slate-400 mb-2" />
+                    <span className="text-sm text-slate-500 dark:text-slate-400">Toca para tomar foto o subir</span>
+                </div>
             </div>
-
             <Button type="submit" className="w-full">Crear Préstamo</Button>
         </form>
       </Modal>
 
-      {/* Add Contact Modal */}
+      <Modal isOpen={isAddAccountOpen} onClose={() => setIsAddAccountOpen(false)} title="Nueva Cuenta">
+          <form onSubmit={handleAddAccount} className="space-y-4">
+              <Select name="bank" label="Banco / Entidad" required>
+                  {COLOMBIAN_BANKS.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </Select>
+              <Input name="name" type="text" label="Nombre de la Cuenta" placeholder="Ej. Ahorros Nómina o Efectivo" required />
+              <Select name="type" label="Tipo de Cuenta">
+                  <option value="CASH">Efectivo</option>
+                  <option value="SAVINGS">Ahorros</option>
+                  <option value="DIGITAL">Billetera Digital</option>
+                  <option value="CURRENT">Corriente</option>
+              </Select>
+              <Input name="balance" type="number" step="0.01" label="Saldo Inicial" placeholder="0.00" required />
+              <Button type="submit" className="w-full">Guardar Cuenta</Button>
+          </form>
+      </Modal>
+
+      <Modal isOpen={isEditAccountOpen} onClose={() => { setIsEditAccountOpen(false); setSelectedAccount(null); }} title="Editar Cuenta">
+          {selectedAccount && (
+              <form onSubmit={handleEditAccount} className="space-y-4">
+                  <Select name="bank" label="Banco / Entidad" defaultValue={COLOMBIAN_BANKS.find(b => b.name === selectedAccount.bank)?.id || 'otro'} required>
+                      {COLOMBIAN_BANKS.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </Select>
+                  <Input name="name" type="text" label="Nombre" defaultValue={selectedAccount.name} required />
+                  <Input name="balance" type="number" step="0.01" label="Saldo" defaultValue={selectedAccount.balance} required />
+                  <Button type="submit" className="w-full">Actualizar Cuenta</Button>
+              </form>
+          )}
+      </Modal>
+
+      <Modal isOpen={isAddPaymentOpen} onClose={() => setIsAddPaymentOpen(false)} title="Registrar Abono">
+        <div className="mb-4 bg-brand-50 dark:bg-brand-900/20 p-3 rounded-lg text-brand-800 dark:text-brand-300 text-sm">
+            <p>Deuda actual: <strong>${selectedLoan?.remainingAmount.toLocaleString()}</strong></p>
+        </div>
+        <form onSubmit={handleAddPayment} className="space-y-4">
+            <Input name="amount" type="number" step="0.01" max={selectedLoan?.remainingAmount} label="Monto a Abonar" placeholder="0.00" required autoFocus />
+            <Select name="account" label="Cuenta (Origen/Destino)" required>
+                  {accounts.map(a => (
+                      <option key={a.id} value={a.id}>{a.name} - ${a.balance.toLocaleString()}</option>
+                  ))}
+            </Select>
+            <Input name="date" type="date" label="Fecha" defaultValue={new Date().toISOString().split('T')[0]} required />
+            <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Evidencia (Opcional)</label>
+                <div className="relative border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-center cursor-pointer">
+                    <input type="file" name="evidence" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                    <Camera className="mx-auto text-slate-400 mb-2" />
+                    <span className="text-sm text-slate-500 dark:text-slate-400">Toca para tomar foto o subir</span>
+                </div>
+            </div>
+            <Button type="submit" className="w-full">Registrar Pago</Button>
+        </form>
+      </Modal>
+
       <Modal isOpen={isAddContactOpen} onClose={() => setIsAddContactOpen(false)} title="Nuevo Contacto">
         <form onSubmit={handleAddContact} className="space-y-4">
             <Input name="name" type="text" label="Nombre Completo" placeholder="Nombre" required />
@@ -1161,28 +1114,28 @@ export default function App() {
         </form>
       </Modal>
 
-      {/* Add Payment Modal */}
-      <Modal isOpen={isAddPaymentOpen} onClose={() => setIsAddPaymentOpen(false)} title="Registrar Abono">
-        <div className="mb-4 bg-brand-50 dark:bg-brand-900/20 p-3 rounded-lg text-brand-800 dark:text-brand-300 text-sm">
-            <p>Deuda actual: <strong>${selectedLoan?.remainingAmount.toLocaleString()}</strong></p>
-        </div>
-        <form onSubmit={handleAddPayment} className="space-y-4">
-            <Input name="amount" type="number" step="0.01" max={selectedLoan?.remainingAmount} label="Monto a Abonar" placeholder="0.00" required autoFocus />
-            <Select name="account" label="Cuenta (Origen/Destino)" required>
-                  <option value="">Seleccionar cuenta...</option>
-                  {accounts.map(a => (
-                      <option key={a.id} value={a.id}>{a.name} - ${a.balance.toLocaleString()}</option>
-                  ))}
-            </Select>
-            <Input name="date" type="date" label="Fecha" defaultValue={new Date().toISOString().split('T')[0]} required />
-             <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Comprobante</label>
-                <input type="file" name="evidence" accept="image/*" className="block w-full text-sm text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 dark:file:bg-brand-900/30 dark:file:text-brand-400 hover:file:bg-brand-100 dark:hover:file:bg-brand-900/50"/>
-            </div>
-            <Button type="submit" className="w-full">Registrar Pago</Button>
-        </form>
+      <Modal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} title="Configuración">
+          <div className="space-y-6">
+              <div>
+                  <h3 className="text-sm font-bold text-slate-500 uppercase mb-3">Backup</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                      <button onClick={handleExportData} className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex flex-col items-center gap-2 text-blue-700 dark:text-blue-400">
+                          <Download size={24} /> <span className="text-sm font-bold">Exportar</span>
+                      </button>
+                      <button onClick={handleImportClick} className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl flex flex-col items-center gap-2 text-emerald-700 dark:text-emerald-400">
+                          <Upload size={24} /> <span className="text-sm font-bold">Importar</span>
+                      </button>
+                      <input type="file" ref={fileInputRef} onChange={handleImportData} accept=".json" className="hidden" />
+                  </div>
+              </div>
+              <div>
+                  <h3 className="text-sm font-bold text-red-500 uppercase mb-3">Peligro</h3>
+                  <button onClick={handleClearData} className="w-full p-3 border border-red-200 dark:border-red-900/50 rounded-xl flex items-center justify-center gap-2 text-red-600 dark:text-red-400">
+                      <Trash2 size={20} /> <span className="font-bold">Borrar Todo</span>
+                  </button>
+              </div>
+          </div>
       </Modal>
-
     </div>
   );
 }
