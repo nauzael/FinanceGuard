@@ -62,17 +62,13 @@
       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       body { 
         overscroll-behavior-y: contain;
-        /* Mejora para apps nativas: evita que el contenido se pegue a los bordes del dispositivo */
         padding-top: var(--ion-safe-area-top);
         background-color: #f8fafc;
       }
       .dark body { background-color: #020617; }
-      
-      /* Ajuste para la navegación fija inferior en apps nativas */
       nav {
         padding-bottom: calc(0.5rem + var(--ion-safe-area-bottom));
       }
-      
       #root:empty::before {
         content: "Cargando FinanceGuard...";
         display: flex;
