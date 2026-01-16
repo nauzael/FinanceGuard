@@ -25,7 +25,7 @@
         window.global = window;
       })();
       
-      // Manejador de errores para diagnosticar pantalla blanca
+      // Manejador de errores para diagnosticar y prevenir pantalla blanca
       window.onerror = function(msg, url, lineNo, columnNo, error) {
         console.error('Error global detectado:', msg, error);
         return false;
@@ -57,23 +57,30 @@
       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       body { overscroll-behavior-y: contain; }
       #root:empty::before {
-        content: "Cargando aplicación...";
+        content: "Cargando FinanceGuard...";
         display: flex;
         justify-content: center;
         align-items: center;
         height: 100vh;
+        width: 100vw;
         font-family: sans-serif;
         color: #64748b;
+        background-color: #f8fafc;
+      }
+      .dark #root:empty::before {
+        background-color: #020617;
+        color: #94a3b8;
       }
     </style>
   <script type="importmap">
 {
   "imports": {
-    "react-dom/": "https://esm.sh/react-dom@19.0.0/",
-    "react/": "https://esm.sh/react@19.0.0/",
     "react": "https://esm.sh/react@19.0.0",
+    "react/": "https://esm.sh/react@19.0.0/",
+    "react-dom": "https://esm.sh/react-dom@19.0.0",
+    "react-dom/": "https://esm.sh/react-dom@19.0.0/",
     "lucide-react": "https://esm.sh/lucide-react@0.460.0",
-    "@google/genai": "https://esm.sh/@google/genai@0.2.1"
+    "@google/genai": "https://esm.sh/@google/genai@0.21.0"
   }
 }
 </script>
