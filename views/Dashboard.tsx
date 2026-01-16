@@ -1,10 +1,9 @@
-
 import React from 'react';
-import { Landmark, Plus, Wallet, ArrowUpRight, ArrowDownLeft, History, Minus, TrendingUp, Bell, Sparkles, RefreshCcw } from 'lucide-react';
+import { Landmark, Plus, Wallet, ArrowUpRight, ArrowDownLeft, History, Minus, TrendingUp, Bell } from 'lucide-react';
 import { Card, COLOMBIAN_BANKS } from '../components/UI.tsx';
 import { TransactionType, View, LoanStatus } from '../types.ts';
 
-export const Dashboard = ({ stats, accounts, recentTransactions, loans, onAddAccount, onEditAccount, onSetView, onRefreshAI, isAILoading }: any) => {
+export const Dashboard = ({ stats, accounts, recentTransactions, loans, onAddAccount, onEditAccount, onSetView }: any) => {
     const bankAccounts = accounts.filter((a: any) => a.type !== 'CASH');
     const totalInBanks = bankAccounts.reduce((sum: number, a: any) => sum + a.balance, 0);
 
@@ -30,35 +29,6 @@ export const Dashboard = ({ stats, accounts, recentTransactions, loans, onAddAcc
                   </div>
               </div>
           )}
-
-          {/* Asesor Financiero IA */}
-          <Card className="bg-gradient-to-br from-indigo-500/10 via-brand-500/5 to-slate-500/10 border-indigo-100 dark:border-indigo-900/30 overflow-hidden relative">
-            <div className="flex justify-between items-start mb-2">
-                <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
-                    <Sparkles size={16} className="animate-pulse" />
-                    <span className="text-xs font-bold uppercase tracking-tighter">Asesor FinanceGuard IA</span>
-                </div>
-                <button 
-                  onClick={onRefreshAI} 
-                  disabled={isAILoading}
-                  className={`p-1 rounded-full hover:bg-white/50 dark:hover:bg-slate-800/50 transition-all ${isAILoading ? 'animate-spin' : ''}`}
-                >
-                  <RefreshCcw size={14} className="text-slate-400" />
-                </button>
-            </div>
-            <div className="relative z-10">
-                {isAILoading ? (
-                    <div className="space-y-2">
-                        <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded-full w-3/4 animate-pulse"></div>
-                        <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded-full w-1/2 animate-pulse"></div>
-                    </div>
-                ) : (
-                    <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed italic">
-                        {stats.aiInsight || "Hola, soy tu asistente. Presiona el botón de actualizar para recibir un consejo financiero basado en tus movimientos actuales."}
-                    </p>
-                )}
-            </div>
-          </Card>
 
           <div>
             <div className="flex justify-between items-center mb-3">

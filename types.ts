@@ -1,4 +1,3 @@
-
 export enum TransactionType {
   EXPENSE = 'EXPENSE',
   INCOME = 'INCOME',
@@ -74,5 +73,4 @@ export interface DashboardStats {
   totalLoansTaken: number;
   activeLoansCount: number;
   totalBalance: number;
-  aiInsight?: string;
 }

@@ -1,4 +1,3 @@
-
 import { Contact, Loan, Transaction, TransactionType, LoanStatus, DashboardStats, BankAccount } from '../types.ts';
 
 const STORAGE_KEYS = {
@@ -6,8 +5,7 @@ const STORAGE_KEYS = {
   TRANSACTIONS: 'fg_transactions',
   LOANS: 'fg_loans',
   ACCOUNTS: 'fg_accounts',
-  SETTINGS: 'fg_settings',
-  AI_INSIGHT: 'fg_ai_insight'
+  SETTINGS: 'fg_settings'
 };
 
 // Helpers privados
@@ -135,17 +133,14 @@ export const StorageService = {
     const transactions = StorageService.getTransactions();
     const loans = StorageService.getLoans();
     const accounts = StorageService.getAccounts();
-    const aiInsight = load<string>(STORAGE_KEYS.AI_INSIGHT, '');
     
     const totalExpenses = transactions.filter(t => t.type === TransactionType.EXPENSE).reduce((sum, t) => sum + t.amount, 0);
     const totalLoansTaken = loans.filter(l => l.type === 'BORROWED' && l.status !== LoanStatus.PAID).reduce((sum, l) => sum + l.remainingAmount, 0);
     const totalLoansGiven = loans.filter(l => l.type === 'LENT' && l.status !== LoanStatus.PAID).reduce((sum, l) => sum + l.remainingAmount, 0);
     const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0);
     
-    return { totalExpenses, totalLoansGiven, totalLoansTaken, activeLoansCount: loans.filter(l => l.status === LoanStatus.ACTIVE).length, totalBalance, aiInsight };
+    return { totalExpenses, totalLoansGiven, totalLoansTaken, activeLoansCount: loans.filter(l => l.status === LoanStatus.ACTIVE).length, totalBalance };
   },
-
-  saveAIInsight: (insight: string) => save(STORAGE_KEYS.AI_INSIGHT, insight),
 
   getSettings: () => load(STORAGE_KEYS.SETTINGS, { remindersEnabled: false }),
   saveSettings: (settings: any) => save(STORAGE_KEYS.SETTINGS, settings),

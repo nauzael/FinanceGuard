@@ -1,11 +1,9 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Home, Wallet, CreditCard, DollarSign, Plus, Settings, Sun, Moon, Camera, Bell, BellOff } from 'lucide-react';
 import { StorageService } from './services/storage.ts';
 import { NotificationService } from './services/notifications.ts';
 import { View, TransactionType, LoanStatus, BankAccount, Contact, Loan, Transaction, DashboardStats } from './types.ts';
 import { Modal, ActionMenu, Button, Input, Select, COLOMBIAN_BANKS } from './components/UI.tsx';
-import { GoogleGenAI } from "@google/genai";
 
 // Vistas
 import { Dashboard } from './views/Dashboard.tsx';
@@ -26,14 +24,13 @@ if (!crypto.randomUUID) {
 
 export default function App() {
   const [currentView, setCurrentView] = useState<View>(View.DASHBOARD);
-  const [stats, setStats] = useState<DashboardStats>({ totalExpenses: 0, totalLoansGiven: 0, totalLoansTaken: 0, activeLoansCount: 0, totalBalance: 0, aiInsight: '' });
+  const [stats, setStats] = useState<DashboardStats>({ totalExpenses: 0, totalLoansGiven: 0, totalLoansTaken: 0, activeLoansCount: 0, totalBalance: 0 });
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
   const [settings, setSettings] = useState(() => StorageService.getSettings());
-  const [isAILoading, setIsAILoading] = useState(false);
 
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
   const [isAddIncomeOpen, setIsAddIncomeOpen] = useState(false);
@@ -58,35 +55,6 @@ export default function App() {
     }
     setStats(StorageService.getStats());
   }, []);
-
-  const generateAIInsight = async () => {
-    if (isAILoading) return;
-    setIsAILoading(true);
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const prompt = `Actúa como un experto asesor financiero personal. Analiza este resumen financiero en pesos colombianos:
-      - Saldo total en cuentas: $${stats.totalBalance}
-      - Gastos totales registrados: $${stats.totalExpenses}
-      - Dinero que me deben (préstamos otorgados): $${stats.totalLoansGiven}
-      - Dinero que yo debo (deudas): $${stats.totalLoansTaken}
-      - Préstamos activos: ${stats.activeLoansCount}
-      
-      Dame un consejo financiero corto (máximo 2 oraciones), directo y accionable en español. Sé motivador pero realista. No uses formato markdown especial, solo texto plano.`;
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: prompt,
-      });
-
-      const text = response.text || "Sigue controlando tus gastos para mantener una salud financiera óptima.";
-      StorageService.saveAIInsight(text);
-      setStats(prev => ({ ...prev, aiInsight: text }));
-    } catch (error) {
-      console.error("Error generating AI insight:", error);
-    } finally {
-      setIsAILoading(false);
-    }
-  };
 
   useEffect(() => { 
     refreshData();
@@ -220,8 +188,6 @@ export default function App() {
             onAddAccount={() => setIsAddAccountOpen(true)} 
             onSetView={setCurrentView} 
             onSelectLoan={(l:any) => { setSelectedLoan(l); setCurrentView(View.LOAN_DETAIL); }}
-            onRefreshAI={generateAIInsight}
-            isAILoading={isAILoading}
           />
         )}
         {currentView === View.EXPENSES && <ExpensesView transactions={transactions} onAddExpense={() => setIsAddExpenseOpen(true)} />}
