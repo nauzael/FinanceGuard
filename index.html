@@ -20,20 +20,27 @@
       window.process = { env: { NODE_ENV: 'production' } };
       window.global = window;
       
-      // Captura de errores para diagnóstico
+      // Captura de errores mejorada para diagnóstico en APK
       window.onerror = function(msg, url, line, col, error) {
         const errorDiv = document.getElementById('error-display');
         if (errorDiv) {
           errorDiv.style.display = 'block';
           errorDiv.innerHTML = `
-            <div style="padding: 20px; background: #fee2e2; color: #b91c1c; font-family: sans-serif; border-radius: 8px; margin: 10px;">
-              <h1 style="font-size: 18px; margin: 0 0 10px 0;">Error de Carga</h1>
+            <div style="padding: 20px; background: #fee2e2; color: #b91c1c; font-family: sans-serif; border-radius: 8px; margin: 10px; border: 2px solid #b91c1c;">
+              <h1 style="font-size: 18px; margin: 0 0 10px 0;">Error Crítico detectado</h1>
               <p style="font-size: 14px; margin: 0;">${msg}</p>
-              <small style="display: block; margin-top: 10px; opacity: 0.7;">${url} L:${line} C:${col}</small>
+              <small style="display: block; margin-top: 10px; opacity: 0.7;">Archivo: ${url}<br>Línea: ${line} Col: ${col}</small>
+              <button onclick="location.reload()" style="margin-top:15px; padding: 8px 15px; background: #b91c1c; color: white; border: none; border-radius: 4px;">Reintentar Carga</button>
             </div>
           `;
         }
+        console.error("Critical Error:", msg, error);
         return false;
+      };
+
+      // Manejo de errores de promesas no capturadas (común en imports)
+      window.onunhandledrejection = function(event) {
+        window.onerror("Error de Módulo: " + event.reason, "Módulo Externo", 0, 0, event.reason);
       };
     </script>
 
@@ -53,7 +60,7 @@
         }
       };
       
-      // Configuración de Babel para soportar TypeScript y React
+      // Configuración de Babel
       Babel.registerPreset('env', {});
     </script>
 
@@ -62,8 +69,8 @@
       body { overscroll-behavior-y: contain; padding-top: var(--ion-safe-area-top); background-color: #f8fafc; }
       .dark body { background-color: #020617; }
       #root:empty::before {
-        content: "Iniciando FinanceGuard...";
-        display: flex; justify-content: center; align-items: center; height: 80vh; color: #64748b; font-family: sans-serif;
+        content: "Cargando módulos de FinanceGuard...";
+        display: flex; justify-content: center; align-items: center; height: 80vh; color: #64748b; font-family: sans-serif; text-align: center; padding: 20px;
       }
     </style>
 
@@ -75,9 +82,9 @@
     "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
     "lucide-react": "https://esm.sh/lucide-react@0.460.0?external=react",
     "@google/genai": "https://esm.sh/@google/genai",
+    "@capacitor/local-notifications": "https://esm.sh/@capacitor/local-notifications@6.0.0",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "@capacitor/local-notifications": "https://esm.sh/@capacitor/local-notifications@^8.0.0"
+    "react/": "https://esm.sh/react@^19.2.3/"
   }
 }
 </script>
@@ -86,7 +93,7 @@
     <div id="error-display" style="display: none; position: fixed; top: 0; left: 0; width: 100%; z-index: 9999;"></div>
     <div id="root"></div>
     
-    <!-- Cargamos index.tsx como un script de Babel para que lo compile en el navegador -->
+    <!-- Importante: data-type="module" y el orden de los scripts -->
     <script type="text/babel" data-presets="react,typescript" data-type="module" src="index.tsx"></script>
   </body>
 </html>
