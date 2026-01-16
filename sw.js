@@ -1,12 +1,12 @@
 
-const CACHE_NAME = 'financeguard-v1';
+const CACHE_NAME = 'financeguard-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
   'https://cdn.tailwindcss.com',
   'https://esm.sh/lucide-react@0.460.0',
-  'https://esm.sh/@google/genai@0.2.1'
+  'https://esm.sh/@google/genai'
 ];
 
 // Install Event
@@ -30,9 +30,8 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Fetch Event (Network-first for dynamic content, Cache-first for static assets)
+// Fetch Event
 self.addEventListener('fetch', event => {
-  // We exclude external scripts that might change or need network
   if (event.request.url.includes('esm.sh') || event.request.url.includes('tailwindcss')) {
     event.respondWith(
       caches.match(event.request).then(cachedResponse => {
