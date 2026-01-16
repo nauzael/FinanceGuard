@@ -516,149 +516,154 @@ export default function App() {
 
   // --- Sub-Components for Views ---
 
-  const Dashboard = () => (
-    <div className="space-y-6 pb-20 animate-in fade-in duration-300">
-      
-      {/* Accounts Summary */}
-      <div>
-        <div className="flex justify-between items-center mb-3">
-             <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <Wallet size={16} className="text-brand-500" />
-                Mis Cuentas y Efectivo
-            </h3>
-            <span className="text-sm font-bold text-slate-700 dark:text-slate-300">${stats.totalBalance.toLocaleString()}</span>
-        </div>
-        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-            <button 
-                onClick={() => setIsAddAccountOpen(true)}
-                className="min-w-[100px] h-[100px] flex flex-col items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-            >
-                <Plus size={24} />
-                <span className="text-xs font-medium">Agregar</span>
-            </button>
-            {accounts.map(acc => {
-                const bankInfo = COLOMBIAN_BANKS.find(b => b.name === acc.bank) || { textColor: 'text-white' };
-                return (
-                    <div 
-                        key={acc.id} 
-                        onClick={() => { setSelectedAccount(acc); setIsEditAccountOpen(true); }}
-                        className="min-w-[160px] p-4 rounded-xl shadow-sm text-white flex flex-col justify-between relative overflow-hidden cursor-pointer active:scale-95 transition-transform"
-                        style={{ backgroundColor: acc.color }}
-                    >
-                        <div className={`absolute top-0 right-0 p-2 opacity-30 ${bankInfo.textColor}`}>
-                            {acc.type === 'CASH' ? <Wallet size={40} /> : <Landmark size={40} />}
-                        </div>
-                        <div className={bankInfo.textColor}>
-                            <p className="text-xs font-medium opacity-90">{acc.bank}</p>
-                            <p className="font-bold truncate">{acc.name}</p>
-                        </div>
-                        <p className={`text-lg font-bold mt-2 ${bankInfo.textColor}`}>${acc.balance.toLocaleString()}</p>
-                    </div>
-                )
-            })}
-        </div>
-      </div>
+  const Dashboard = () => {
+    const bankAccounts = accounts.filter(a => a.type !== 'CASH');
+    const totalInBanks = bankAccounts.reduce((sum, a) => sum + a.balance, 0);
 
-      {/* Balance Cards */}
-      <div className="grid grid-cols-2 gap-3">
-        <Card className="bg-gradient-to-br from-brand-600 to-brand-700 text-white border-none">
-          <div className="flex items-center gap-2 mb-2 opacity-80">
-            <ArrowUpRight size={16} />
-            <span className="text-xs font-semibold uppercase tracking-wider">Me Deben</span>
+    return (
+        <div className="space-y-6 pb-20 animate-in fade-in duration-300">
+          
+          {/* Accounts Summary */}
+          <div>
+            <div className="flex justify-between items-center mb-3">
+                 <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <Landmark size={16} className="text-brand-500" />
+                    Mis Cuentas
+                </h3>
+                <span className="text-sm font-bold text-slate-700 dark:text-slate-300">${totalInBanks.toLocaleString()}</span>
+            </div>
+            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+                <button 
+                    onClick={() => setIsAddAccountOpen(true)}
+                    className="min-w-[100px] h-[100px] flex flex-col items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                >
+                    <Plus size={24} />
+                    <span className="text-xs font-medium">Agregar</span>
+                </button>
+                {bankAccounts.map(acc => {
+                    const bankInfo = COLOMBIAN_BANKS.find(b => b.name === acc.bank) || { textColor: 'text-white' };
+                    return (
+                        <div 
+                            key={acc.id} 
+                            onClick={() => { setSelectedAccount(acc); setIsEditAccountOpen(true); }}
+                            className="min-w-[160px] p-4 rounded-xl shadow-sm text-white flex flex-col justify-between relative overflow-hidden cursor-pointer active:scale-95 transition-transform"
+                            style={{ backgroundColor: acc.color }}
+                        >
+                            <div className={`absolute top-0 right-0 p-2 opacity-30 ${bankInfo.textColor}`}>
+                                {acc.type === 'CASH' ? <Wallet size={40} /> : <Landmark size={40} />}
+                            </div>
+                            <div className={bankInfo.textColor}>
+                                <p className="text-xs font-medium opacity-90">{acc.bank}</p>
+                                <p className="font-bold truncate">{acc.name}</p>
+                            </div>
+                            <p className={`text-lg font-bold mt-2 ${bankInfo.textColor}`}>${acc.balance.toLocaleString()}</p>
+                        </div>
+                    )
+                })}
+            </div>
           </div>
-          <p className="text-2xl font-bold tracking-tight">${stats.totalLoansGiven.toLocaleString()}</p>
-        </Card>
-        <Card className="bg-white dark:bg-slate-900 dark:border-slate-800">
-           <div className="flex items-center gap-2 mb-2 text-slate-500 dark:text-slate-400">
-            <ArrowDownLeft size={16} />
-            <span className="text-xs font-semibold uppercase tracking-wider">Yo Debo</span>
-          </div>
-          <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">${stats.totalLoansTaken.toLocaleString()}</p>
-        </Card>
-      </div>
 
-      {/* Active Loans */}
-      {activeLoans.length > 0 && (
-        <div>
-          <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
-            <AlertCircle size={16} className="text-amber-500" />
-            Préstamos Activos
-          </h3>
-          <div className="space-y-3">
-             {activeLoans.slice(0, 3).map(loan => {
-               const contact = contacts.find(c => c.id === loan.contactId);
-               return (
-                <div key={loan.id} onClick={() => { setSelectedLoan(loan); setCurrentView(View.LOAN_DETAIL); }} className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm flex justify-between items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${loan.type === 'LENT' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'}`}>
-                        {contact?.name.charAt(0) || '?'}
-                    </div>
-                    <div>
-                        <p className="font-semibold text-sm text-slate-800 dark:text-slate-200">{contact?.name}</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          {loan.dueDate ? `Vence: ${new Date(loan.dueDate).toLocaleDateString()}` : 'Sin fecha límite'}
+          {/* Balance Cards */}
+          <div className="grid grid-cols-2 gap-3">
+            <Card className="bg-gradient-to-br from-brand-600 to-brand-700 text-white border-none">
+              <div className="flex items-center gap-2 mb-2 opacity-80">
+                <ArrowUpRight size={16} />
+                <span className="text-xs font-semibold uppercase tracking-wider">Me Deben</span>
+              </div>
+              <p className="text-2xl font-bold tracking-tight">${stats.totalLoansGiven.toLocaleString()}</p>
+            </Card>
+            <Card className="bg-white dark:bg-slate-900 dark:border-slate-800">
+               <div className="flex items-center gap-2 mb-2 text-slate-500 dark:text-slate-400">
+                <ArrowDownLeft size={16} />
+                <span className="text-xs font-semibold uppercase tracking-wider">Yo Debo</span>
+              </div>
+              <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">${stats.totalLoansTaken.toLocaleString()}</p>
+            </Card>
+          </div>
+
+          {/* Active Loans */}
+          {activeLoans.length > 0 && (
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
+                <AlertCircle size={16} className="text-amber-500" />
+                Préstamos Activos
+              </h3>
+              <div className="space-y-3">
+                 {activeLoans.slice(0, 3).map(loan => {
+                   const contact = contacts.find(c => c.id === loan.contactId);
+                   return (
+                    <div key={loan.id} onClick={() => { setSelectedLoan(loan); setCurrentView(View.LOAN_DETAIL); }} className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm flex justify-between items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${loan.type === 'LENT' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'}`}>
+                            {contact?.name.charAt(0) || '?'}
+                        </div>
+                        <div>
+                            <p className="font-semibold text-sm text-slate-800 dark:text-slate-200">{contact?.name}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                              {loan.dueDate ? `Vence: ${new Date(loan.dueDate).toLocaleDateString()}` : 'Sin fecha límite'}
+                            </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className={`font-bold text-sm ${loan.type === 'LENT' ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}`}>
+                            ${loan.remainingAmount.toLocaleString()}
                         </p>
+                        <p className="text-[10px] text-slate-400 uppercase">{loan.type === 'LENT' ? 'Te deben' : 'Debes'}</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <p className={`font-bold text-sm ${loan.type === 'LENT' ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}`}>
-                        ${loan.remainingAmount.toLocaleString()}
-                    </p>
-                    <p className="text-[10px] text-slate-400 uppercase">{loan.type === 'LENT' ? 'Te deben' : 'Debes'}</p>
-                  </div>
-                </div>
-               )
-             })}
+                   )
+                 })}
+              </div>
+            </div>
+          )}
+
+          {/* Recent Transactions */}
+          <div>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
+                <History size={16} className="text-slate-400" />
+                Movimientos Recientes
+            </h3>
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 divide-y divide-slate-50 dark:divide-slate-800">
+                {recentTransactions.length === 0 ? (
+                    <div className="p-4 text-center text-sm text-slate-400">Sin movimientos aún</div>
+                ) : (
+                    recentTransactions.map(t => (
+                        <div key={t.id} className="p-3 flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <div className={`p-2 rounded-lg ${
+                                    t.type === TransactionType.EXPENSE 
+                                    ? 'bg-red-50 text-red-500 dark:bg-red-900/20 dark:text-red-400' 
+                                    : t.type === TransactionType.INCOME
+                                    ? 'bg-emerald-50 text-emerald-500 dark:bg-emerald-900/20 dark:text-emerald-400'
+                                    : t.type === TransactionType.LOAN_PAYMENT 
+                                    ? 'bg-blue-50 text-blue-500 dark:bg-blue-900/20 dark:text-blue-400' 
+                                    : 'bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                                }`}>
+                                    {t.type === TransactionType.EXPENSE ? <Minus size={14}/> : t.type === TransactionType.INCOME ? <TrendingUp size={14}/> : <DollarSign size={14}/>}
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200 line-clamp-1">{t.description}</p>
+                                    <p className="text-xs text-slate-400">{new Date(t.date).toLocaleDateString()}</p>
+                                </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                                 <span className={`text-sm font-bold ${t.type === TransactionType.EXPENSE || t.type === TransactionType.LOAN_GIVEN ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                                    {t.type === TransactionType.EXPENSE || t.type === TransactionType.LOAN_GIVEN ? '-' : '+'}${t.amount.toLocaleString()}
+                                </span>
+                                {t.accountId && (
+                                    <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-slate-500">
+                                        {accounts.find(a => a.id === t.accountId)?.bank}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
           </div>
         </div>
-      )}
-
-      {/* Recent Transactions */}
-      <div>
-        <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
-            <History size={16} className="text-slate-400" />
-            Movimientos Recientes
-        </h3>
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 divide-y divide-slate-50 dark:divide-slate-800">
-            {recentTransactions.length === 0 ? (
-                <div className="p-4 text-center text-sm text-slate-400">Sin movimientos aún</div>
-            ) : (
-                recentTransactions.map(t => (
-                    <div key={t.id} className="p-3 flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-lg ${
-                                t.type === TransactionType.EXPENSE 
-                                ? 'bg-red-50 text-red-500 dark:bg-red-900/20 dark:text-red-400' 
-                                : t.type === TransactionType.INCOME
-                                ? 'bg-emerald-50 text-emerald-500 dark:bg-emerald-900/20 dark:text-emerald-400'
-                                : t.type === TransactionType.LOAN_PAYMENT 
-                                ? 'bg-blue-50 text-blue-500 dark:bg-blue-900/20 dark:text-blue-400' 
-                                : 'bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
-                            }`}>
-                                {t.type === TransactionType.EXPENSE ? <Minus size={14}/> : t.type === TransactionType.INCOME ? <TrendingUp size={14}/> : <DollarSign size={14}/>}
-                            </div>
-                            <div>
-                                <p className="text-sm font-medium text-slate-800 dark:text-slate-200 line-clamp-1">{t.description}</p>
-                                <p className="text-xs text-slate-400">{new Date(t.date).toLocaleDateString()}</p>
-                            </div>
-                        </div>
-                        <div className="flex flex-col items-end gap-1">
-                             <span className={`text-sm font-bold ${t.type === TransactionType.EXPENSE || t.type === TransactionType.LOAN_GIVEN ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-                                {t.type === TransactionType.EXPENSE || t.type === TransactionType.LOAN_GIVEN ? '-' : '+'}${t.amount.toLocaleString()}
-                            </span>
-                            {t.accountId && (
-                                <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-slate-500">
-                                    {accounts.find(a => a.id === t.accountId)?.bank}
-                                </span>
-                            )}
-                        </div>
-                    </div>
-                ))
-            )}
-        </div>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const ExpensesView = () => {
     const expenses = transactions.filter(t => t.type === TransactionType.EXPENSE).sort((a,b) => b.date - a.date);
@@ -764,6 +769,9 @@ export default function App() {
   };
 
   const AccountsView = () => {
+      const bankAccounts = accounts.filter(a => a.type !== 'CASH');
+      const totalInBanks = bankAccounts.reduce((sum, a) => sum + a.balance, 0);
+
       return (
           <div className="pb-20 animate-in fade-in">
              <div className="flex justify-between items-center mb-4">
@@ -774,12 +782,12 @@ export default function App() {
             </div>
             
             <Card className="bg-slate-900 dark:bg-slate-800 text-white mb-6">
-                <p className="text-sm opacity-70 mb-1">Saldo Total</p>
-                <p className="text-3xl font-bold">${stats.totalBalance.toLocaleString()}</p>
+                <p className="text-sm opacity-70 mb-1">Saldo Total en Bancos</p>
+                <p className="text-3xl font-bold">${totalInBanks.toLocaleString()}</p>
             </Card>
 
             <div className="grid grid-cols-1 gap-4">
-                {accounts.map(acc => {
+                {bankAccounts.map(acc => {
                      const bankInfo = COLOMBIAN_BANKS.find(b => b.name === acc.bank) || { textColor: 'text-white' };
                      return (
                          <div key={acc.id} onClick={() => { setSelectedAccount(acc); setIsEditAccountOpen(true); }} className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center justify-between cursor-pointer active:scale-95 transition-transform">
@@ -984,7 +992,7 @@ export default function App() {
           <form onSubmit={handleAddIncome} className="space-y-4">
               <Input name="amount" type="number" step="0.01" label="Monto" placeholder="0.00" required autoFocus />
               <Input name="description" type="text" label="Descripción" placeholder="Ej. Sueldo, Venta, Regalo" required />
-              <Select name="account" label="Recibir en (Cuenta)" required>
+              <Select name="account" label="Recibir en (Cuenta / Efectivo)" required>
                   {accounts.map(a => (
                       <option key={a.id} value={a.id}>{a.name} - ${a.balance.toLocaleString()}</option>
                   ))}
@@ -998,7 +1006,7 @@ export default function App() {
         <form onSubmit={handleAddExpense} className="space-y-4">
             <Input name="amount" type="number" step="0.01" label="Monto" placeholder="0.00" required autoFocus />
             <Input name="description" type="text" label="Descripción" placeholder="Ej. Comida, Transporte" required />
-            <Select name="account" label="Pagar desde (Cuenta)" required>
+            <Select name="account" label="Pagar desde (Cuenta / Efectivo)" required>
                   {accounts.map(a => (
                       <option key={a.id} value={a.id}>{a.name} - ${a.balance.toLocaleString()}</option>
                   ))}
@@ -1028,7 +1036,7 @@ export default function App() {
                 <datalist id="contacts-list">{contacts.map(c => <option key={c.id} value={c.name} />)}</datalist>
             </div>
             <Input name="amount" type="number" step="0.01" label="Monto" placeholder="0.00" required />
-            <Select name="account" label="Cuenta (Origen/Destino)" required>
+            <Select name="account" label="Cuenta de Origen / Efectivo" required>
                   {accounts.map(a => (
                       <option key={a.id} value={a.id}>{a.name} - ${a.balance.toLocaleString()}</option>
                   ))}
@@ -1054,11 +1062,10 @@ export default function App() {
       <Modal isOpen={isAddAccountOpen} onClose={() => setIsAddAccountOpen(false)} title="Nueva Cuenta">
           <form onSubmit={handleAddAccount} className="space-y-4">
               <Select name="bank" label="Banco / Entidad" required>
-                  {COLOMBIAN_BANKS.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  {COLOMBIAN_BANKS.filter(b => b.id !== 'efectivo').map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
               </Select>
-              <Input name="name" type="text" label="Nombre de la Cuenta" placeholder="Ej. Ahorros Nómina o Efectivo" required />
+              <Input name="name" type="text" label="Nombre de la Cuenta" placeholder="Ej. Ahorros Nómina" required />
               <Select name="type" label="Tipo de Cuenta">
-                  <option value="CASH">Efectivo</option>
                   <option value="SAVINGS">Ahorros</option>
                   <option value="DIGITAL">Billetera Digital</option>
                   <option value="CURRENT">Corriente</option>
@@ -1072,7 +1079,7 @@ export default function App() {
           {selectedAccount && (
               <form onSubmit={handleEditAccount} className="space-y-4">
                   <Select name="bank" label="Banco / Entidad" defaultValue={COLOMBIAN_BANKS.find(b => b.name === selectedAccount.bank)?.id || 'otro'} required>
-                      {COLOMBIAN_BANKS.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                      {COLOMBIAN_BANKS.filter(b => b.id !== 'efectivo').map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                   </Select>
                   <Input name="name" type="text" label="Nombre" defaultValue={selectedAccount.name} required />
                   <Input name="balance" type="number" step="0.01" label="Saldo" defaultValue={selectedAccount.balance} required />
@@ -1087,7 +1094,7 @@ export default function App() {
         </div>
         <form onSubmit={handleAddPayment} className="space-y-4">
             <Input name="amount" type="number" step="0.01" max={selectedLoan?.remainingAmount} label="Monto a Abonar" placeholder="0.00" required autoFocus />
-            <Select name="account" label="Cuenta (Origen/Destino)" required>
+            <Select name="account" label="Cuenta de Pago / Efectivo" required>
                   {accounts.map(a => (
                       <option key={a.id} value={a.id}>{a.name} - ${a.balance.toLocaleString()}</option>
                   ))}
