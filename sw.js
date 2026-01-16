@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'financeguard-v4';
+const CACHE_NAME = 'financeguard-v5';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -7,56 +7,29 @@ const ASSETS_TO_CACHE = [
   './App.tsx',
   './types.ts',
   './services/storage.ts',
+  './components/UI.tsx',
+  './views/Dashboard.tsx',
+  './views/Expenses.tsx',
+  './views/Loans.tsx',
+  './views/Accounts.tsx',
+  './views/Contacts.tsx',
+  './views/LoanDetail.tsx',
   './manifest.json',
   'https://cdn.tailwindcss.com',
-  'https://unpkg.com/@babel/standalone/babel.min.js',
-  'https://esm.sh/lucide-react@0.460.0?external=react'
+  'https://unpkg.com/@babel/standalone/babel.min.js'
 ];
 
-// Install Event
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS_TO_CACHE)));
   self.skipWaiting();
 });
 
-// Activate Event
 self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(keys => {
-      return Promise.all(
-        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
-      );
-    })
-  );
+  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))));
 });
 
-// Fetch Event
 self.addEventListener('fetch', event => {
-  // Para recursos de CDN y módulos externos
-  if (event.request.url.includes('esm.sh') || 
-      event.request.url.includes('tailwindcss') || 
-      event.request.url.includes('unpkg.com')) {
-    event.respondWith(
-      caches.match(event.request).then(cachedResponse => {
-        return cachedResponse || fetch(event.request).then(networkResponse => {
-          return caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, networkResponse.clone());
-            return networkResponse;
-          });
-        });
-      })
-    );
-    return;
-  }
-
-  // Estrategia Network-First para archivos locales para evitar quedarse trabado en versiones viejas durante desarrollo
   event.respondWith(
-    fetch(event.request).catch(() => {
-      return caches.match(event.request);
-    })
+    fetch(event.request).catch(() => caches.match(event.request))
   );
 });

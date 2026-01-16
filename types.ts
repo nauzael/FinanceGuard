@@ -1,15 +1,25 @@
+
 export enum TransactionType {
   EXPENSE = 'EXPENSE',
   INCOME = 'INCOME',
-  LOAN_GIVEN = 'LOAN_GIVEN', // Presté dinero
-  LOAN_TAKEN = 'LOAN_TAKEN', // Me prestaron dinero
-  LOAN_PAYMENT = 'LOAN_PAYMENT' // Abono a préstamo
+  LOAN_GIVEN = 'LOAN_GIVEN',
+  LOAN_TAKEN = 'LOAN_TAKEN',
+  LOAN_PAYMENT = 'LOAN_PAYMENT'
 }
 
 export enum LoanStatus {
   ACTIVE = 'ACTIVE',
   PAID = 'PAID',
   OVERDUE = 'OVERDUE'
+}
+
+export enum View {
+  DASHBOARD,
+  EXPENSES,
+  LOANS,
+  CONTACTS,
+  LOAN_DETAIL,
+  ACCOUNTS
 }
 
 export interface BankAccount {
@@ -25,7 +35,7 @@ export interface Contact {
   id: string;
   name: string;
   phone?: string;
-  relation?: string; // Amigo, Familiar, Trabajo
+  relation?: string;
   createdAt: number;
 }
 
@@ -36,36 +46,32 @@ export interface Transaction {
   date: number;
   description: string;
   categoryId?: string;
-  evidenceUrl?: string; // Base64 image
-  
-  // Relacionado con préstamos
+  evidenceUrl?: string;
   contactId?: string;
   loanId?: string;
-  
-  // Relacionado con cuentas
   accountId?: string;
 }
 
 export interface Loan {
   id: string;
   contactId: string;
-  type: 'LENT' | 'BORROWED'; // LENT = Yo presté, BORROWED = Me prestaron
+  type: 'LENT' | 'BORROWED';
   originalAmount: number;
-  interestRate: number; // Porcentaje (0-100)
+  interestRate: number;
   totalAmountWithInterest: number;
   remainingAmount: number;
   startDate: number;
-  dueDate?: number; // Ahora es opcional
+  dueDate?: number;
   status: LoanStatus;
   description: string;
   evidenceUrl?: string;
-  accountId?: string; // Cuenta de donde salió/entró el dinero original
+  accountId?: string;
 }
 
 export interface DashboardStats {
   totalExpenses: number;
-  totalLoansGiven: number; // Lo que me deben
-  totalLoansTaken: number; // Lo que debo
+  totalLoansGiven: number;
+  totalLoansTaken: number;
   activeLoansCount: number;
-  totalBalance: number; // Nuevo: Saldo total en cuentas
+  totalBalance: number;
 }
