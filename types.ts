@@ -74,4 +74,5 @@ export interface DashboardStats {
   totalLoansTaken: number;
   activeLoansCount: number;
   totalBalance: number;
+  aiInsight?: string;
 }

@@ -6,10 +6,11 @@ const STORAGE_KEYS = {
   TRANSACTIONS: 'fg_transactions',
   LOANS: 'fg_loans',
   ACCOUNTS: 'fg_accounts',
-  SETTINGS: 'fg_settings'
+  SETTINGS: 'fg_settings',
+  AI_INSIGHT: 'fg_ai_insight'
 };
 
-// Helpers
+// Helpers privados
 const save = (key: string, data: any) => {
   try {
     localStorage.setItem(key, JSON.stringify(data));
@@ -28,7 +29,10 @@ const load = <T>(key: string, defaultValue: T): T => {
   }
 };
 
-const updateAccountBalance = (accountId: string, amount: number, operation: 'ADD' | 'SUBTRACT') => {
+export const StorageService = {
+  getAccounts: (): BankAccount[] => load<BankAccount[]>(STORAGE_KEYS.ACCOUNTS, []),
+  
+  updateAccountBalance: (accountId: string, amount: number, operation: 'ADD' | 'SUBTRACT') => {
     const accounts = StorageService.getAccounts();
     const index = accounts.findIndex(a => a.id === accountId);
     if (index !== -1) {
@@ -39,14 +43,13 @@ const updateAccountBalance = (accountId: string, amount: number, operation: 'ADD
         }
         save(STORAGE_KEYS.ACCOUNTS, accounts);
     }
-};
+  },
 
-export const StorageService = {
-  getAccounts: (): BankAccount[] => load<BankAccount[]>(STORAGE_KEYS.ACCOUNTS, []),
   addAccount: (account: BankAccount): void => {
     const accounts = StorageService.getAccounts();
     save(STORAGE_KEYS.ACCOUNTS, [...accounts, account]);
   },
+
   updateAccount: (account: BankAccount): void => {
       const accounts = StorageService.getAccounts();
       const index = accounts.findIndex(a => a.id === account.id);
@@ -55,24 +58,30 @@ export const StorageService = {
           save(STORAGE_KEYS.ACCOUNTS, accounts);
       }
   },
+
   getContacts: (): Contact[] => load<Contact[]>(STORAGE_KEYS.CONTACTS, []),
+  
   addContact: (contact: Contact): void => {
     const contacts = StorageService.getContacts();
     save(STORAGE_KEYS.CONTACTS, [...contacts, contact]);
   },
+
   getTransactions: (): Transaction[] => load<Transaction[]>(STORAGE_KEYS.TRANSACTIONS, []),
+  
   addTransaction: (transaction: Transaction): void => {
     const transactions = StorageService.getTransactions();
     save(STORAGE_KEYS.TRANSACTIONS, [transaction, ...transactions]);
     if (transaction.accountId) {
         if (transaction.type === TransactionType.EXPENSE) {
-            updateAccountBalance(transaction.accountId, transaction.amount, 'SUBTRACT');
+            StorageService.updateAccountBalance(transaction.accountId, transaction.amount, 'SUBTRACT');
         } else if (transaction.type === TransactionType.INCOME) {
-            updateAccountBalance(transaction.accountId, transaction.amount, 'ADD');
+            StorageService.updateAccountBalance(transaction.accountId, transaction.amount, 'ADD');
         }
     }
   },
+
   getLoans: (): Loan[] => load<Loan[]>(STORAGE_KEYS.LOANS, []),
+  
   addLoan: (loan: Loan): void => {
     const loans = StorageService.getLoans();
     save(STORAGE_KEYS.LOANS, [loan, ...loans]);
@@ -87,14 +96,10 @@ export const StorageService = {
       evidenceUrl: loan.evidenceUrl,
       accountId: loan.accountId
     };
-    const transactions = StorageService.getTransactions();
-    save(STORAGE_KEYS.TRANSACTIONS, [transaction, ...transactions]);
-    if (loan.accountId) {
-        if (loan.type === 'LENT') updateAccountBalance(loan.accountId, loan.originalAmount, 'SUBTRACT');
-        else updateAccountBalance(loan.accountId, loan.originalAmount, 'ADD');
-    }
+    StorageService.addTransaction(transaction);
   },
-  registerLoanPayment: (loanId: string, amount: number, date: number, accountId?: string, evidenceUrl?: string, paymentType: string = 'CAPITAL_AND_INTEREST'): void => {
+
+  registerLoanPayment: (loanId: string, amount: number, date: number, accountId?: string, evidenceUrl?: string): void => {
     const loans = StorageService.getLoans();
     const loanIndex = loans.findIndex(l => l.id === loanId);
     if (loanIndex === -1) return;
@@ -121,22 +126,30 @@ export const StorageService = {
     const transactions = StorageService.getTransactions();
     save(STORAGE_KEYS.TRANSACTIONS, [transaction, ...transactions]);
     if (accountId) {
-        if (loan.type === 'LENT') updateAccountBalance(accountId, amount, 'ADD');
-        else updateAccountBalance(accountId, amount, 'SUBTRACT');
+        if (loan.type === 'LENT') StorageService.updateAccountBalance(accountId, amount, 'ADD');
+        else StorageService.updateAccountBalance(accountId, amount, 'SUBTRACT');
     }
   },
+
   getStats: (): DashboardStats => {
     const transactions = StorageService.getTransactions();
     const loans = StorageService.getLoans();
     const accounts = StorageService.getAccounts();
+    const aiInsight = load<string>(STORAGE_KEYS.AI_INSIGHT, '');
+    
     const totalExpenses = transactions.filter(t => t.type === TransactionType.EXPENSE).reduce((sum, t) => sum + t.amount, 0);
     const totalLoansTaken = loans.filter(l => l.type === 'BORROWED' && l.status !== LoanStatus.PAID).reduce((sum, l) => sum + l.remainingAmount, 0);
     const totalLoansGiven = loans.filter(l => l.type === 'LENT' && l.status !== LoanStatus.PAID).reduce((sum, l) => sum + l.remainingAmount, 0);
     const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0);
-    return { totalExpenses, totalLoansGiven, totalLoansTaken, activeLoansCount: loans.filter(l => l.status === LoanStatus.ACTIVE).length, totalBalance };
+    
+    return { totalExpenses, totalLoansGiven, totalLoansTaken, activeLoansCount: loans.filter(l => l.status === LoanStatus.ACTIVE).length, totalBalance, aiInsight };
   },
+
+  saveAIInsight: (insight: string) => save(STORAGE_KEYS.AI_INSIGHT, insight),
+
   getSettings: () => load(STORAGE_KEYS.SETTINGS, { remindersEnabled: false }),
   saveSettings: (settings: any) => save(STORAGE_KEYS.SETTINGS, settings),
+  
   exportData: (): string => {
     return JSON.stringify({
       contacts: load(STORAGE_KEYS.CONTACTS, []),
@@ -147,6 +160,7 @@ export const StorageService = {
       timestamp: new Date().toISOString()
     }, null, 2);
   },
+
   importData: (json: string): boolean => {
       try {
           const data = JSON.parse(json);
@@ -158,10 +172,8 @@ export const StorageService = {
           return true;
       } catch(e) { return false; }
   },
+
   clearAll: () => {
-      localStorage.removeItem(STORAGE_KEYS.CONTACTS);
-      localStorage.removeItem(STORAGE_KEYS.TRANSACTIONS);
-      localStorage.removeItem(STORAGE_KEYS.LOANS);
-      localStorage.removeItem(STORAGE_KEYS.ACCOUNTS);
+      Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
   }
 };

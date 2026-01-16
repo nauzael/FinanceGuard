@@ -1,10 +1,11 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Home, Wallet, CreditCard, DollarSign, Plus, Settings, Sun, Moon, X, Camera, Bell, BellOff } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Home, Wallet, CreditCard, DollarSign, Plus, Settings, Sun, Moon, Camera, Bell, BellOff } from 'lucide-react';
 import { StorageService } from './services/storage.ts';
 import { NotificationService } from './services/notifications.ts';
 import { View, TransactionType, LoanStatus, BankAccount, Contact, Loan, Transaction, DashboardStats } from './types.ts';
 import { Modal, ActionMenu, Button, Input, Select, COLOMBIAN_BANKS } from './components/UI.tsx';
+import { GoogleGenAI } from "@google/genai";
 
 // Vistas
 import { Dashboard } from './views/Dashboard.tsx';
@@ -25,13 +26,14 @@ if (!crypto.randomUUID) {
 
 export default function App() {
   const [currentView, setCurrentView] = useState<View>(View.DASHBOARD);
-  const [stats, setStats] = useState<DashboardStats>({ totalExpenses: 0, totalLoansGiven: 0, totalLoansTaken: 0, activeLoansCount: 0, totalBalance: 0 });
+  const [stats, setStats] = useState<DashboardStats>({ totalExpenses: 0, totalLoansGiven: 0, totalLoansTaken: 0, activeLoansCount: 0, totalBalance: 0, aiInsight: '' });
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
   const [settings, setSettings] = useState(() => StorageService.getSettings());
+  const [isAILoading, setIsAILoading] = useState(false);
 
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
   const [isAddIncomeOpen, setIsAddIncomeOpen] = useState(false);
@@ -42,7 +44,7 @@ export default function App() {
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
   const [formImagePreview, setFormImagePreview] = useState<string | null>(null);
 
-  const refreshData = () => {
+  const refreshData = useCallback(() => {
     setTransactions(StorageService.getTransactions());
     setLoans(StorageService.getLoans());
     setContacts(StorageService.getContacts());
@@ -55,6 +57,35 @@ export default function App() {
         setAccounts(accs);
     }
     setStats(StorageService.getStats());
+  }, []);
+
+  const generateAIInsight = async () => {
+    if (isAILoading) return;
+    setIsAILoading(true);
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const prompt = `Actúa como un experto asesor financiero personal. Analiza este resumen financiero en pesos colombianos:
+      - Saldo total en cuentas: $${stats.totalBalance}
+      - Gastos totales registrados: $${stats.totalExpenses}
+      - Dinero que me deben (préstamos otorgados): $${stats.totalLoansGiven}
+      - Dinero que yo debo (deudas): $${stats.totalLoansTaken}
+      - Préstamos activos: ${stats.activeLoansCount}
+      
+      Dame un consejo financiero corto (máximo 2 oraciones), directo y accionable en español. Sé motivador pero realista. No uses formato markdown especial, solo texto plano.`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: prompt,
+      });
+
+      const text = response.text || "Sigue controlando tus gastos para mantener una salud financiera óptima.";
+      StorageService.saveAIInsight(text);
+      setStats(prev => ({ ...prev, aiInsight: text }));
+    } catch (error) {
+      console.error("Error generating AI insight:", error);
+    } finally {
+      setIsAILoading(false);
+    }
   };
 
   useEffect(() => { 
@@ -62,7 +93,7 @@ export default function App() {
     if (settings.remindersEnabled) {
       NotificationService.requestPermissions();
     }
-  }, []);
+  }, [refreshData, settings.remindersEnabled]);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
@@ -100,8 +131,8 @@ export default function App() {
       type: (form.elements.namedItem('type') as HTMLSelectElement).value as any,
       originalAmount: parseFloat((form.elements.namedItem('amount') as HTMLInputElement).value),
       interestRate: parseFloat((form.elements.namedItem('interest') as HTMLInputElement).value) || 0,
-      totalAmountWithInterest: 0, // El servicio lo calcula
-      remainingAmount: 0, // El servicio lo calcula
+      totalAmountWithInterest: 0,
+      remainingAmount: 0,
       startDate: new Date((form.elements.namedItem('date') as HTMLInputElement).value).getTime(),
       dueDate: (form.elements.namedItem('dueDate') as HTMLInputElement).value ? new Date((form.elements.namedItem('dueDate') as HTMLInputElement).value).getTime() : undefined,
       status: LoanStatus.ACTIVE,
@@ -110,7 +141,6 @@ export default function App() {
       evidenceUrl: formImagePreview || undefined
     };
 
-    // Ajuste de totales
     newLoan.totalAmountWithInterest = newLoan.originalAmount * (1 + (newLoan.interestRate / 100));
     newLoan.remainingAmount = newLoan.totalAmountWithInterest;
 
@@ -180,7 +210,20 @@ export default function App() {
       </header>
 
       <main className="max-w-md mx-auto p-4">
-        {currentView === View.DASHBOARD && <Dashboard stats={stats} accounts={accounts} recentTransactions={transactions.slice(0, 10)} loans={loans} contacts={contacts} onAddAccount={() => setIsAddAccountOpen(true)} onSetView={setCurrentView} onSelectLoan={(l:any) => { setSelectedLoan(l); setCurrentView(View.LOAN_DETAIL); }} />}
+        {currentView === View.DASHBOARD && (
+          <Dashboard 
+            stats={stats} 
+            accounts={accounts} 
+            recentTransactions={transactions.slice(0, 10)} 
+            loans={loans} 
+            contacts={contacts} 
+            onAddAccount={() => setIsAddAccountOpen(true)} 
+            onSetView={setCurrentView} 
+            onSelectLoan={(l:any) => { setSelectedLoan(l); setCurrentView(View.LOAN_DETAIL); }}
+            onRefreshAI={generateAIInsight}
+            isAILoading={isAILoading}
+          />
+        )}
         {currentView === View.EXPENSES && <ExpensesView transactions={transactions} onAddExpense={() => setIsAddExpenseOpen(true)} />}
         {currentView === View.LOANS && <LoansView loans={loans} contacts={contacts} onSelectLoan={(l: any) => { setSelectedLoan(l); setCurrentView(View.LOAN_DETAIL); }} onAddLoan={() => setIsAddLoanOpen(true)} />}
         {currentView === View.LOAN_DETAIL && <LoanDetailView loan={selectedLoan} contacts={contacts} transactions={transactions} onBack={() => setCurrentView(View.LOANS)} refresh={refreshData} remindersEnabled={settings.remindersEnabled} />}
@@ -198,7 +241,6 @@ export default function App() {
 
       <ActionMenu isOpen={isActionMenuOpen} onClose={() => setIsActionMenuOpen(false)} onAddIncome={() => setIsAddIncomeOpen(true)} onAddExpense={() => setIsAddExpenseOpen(true)} onAddLoan={() => setIsAddLoanOpen(true)} />
 
-      {/* Modal Ajustes con Toggle de Notificaciones */}
       <Modal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} title="Configuración">
           <div className="space-y-6">
               <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
