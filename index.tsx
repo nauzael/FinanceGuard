@@ -1,6 +1,6 @@
 
 import React from 'react';
-import ReactDOM from 'react-dom/client';
+import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 
 const init = () => {
@@ -10,7 +10,7 @@ const init = () => {
       throw new Error("No se pudo encontrar el elemento raíz para montar la aplicación.");
     }
 
-    const root = ReactDOM.createRoot(rootElement);
+    const root = createRoot(rootElement);
     root.render(
       <React.StrictMode>
         <App />
@@ -36,12 +36,12 @@ const init = () => {
     const errorDisplay = document.getElementById('error-display');
     if (errorDisplay) {
       errorDisplay.style.display = 'block';
-      errorDisplay.innerHTML = `<div style="padding: 20px; color: red;">Error de inicio: ${error.message}</div>`;
+      errorDisplay.innerHTML = `<div style="padding: 20px; background: white; color: red; border-bottom: 2px solid red;">Error de inicio: ${error.message}</div>`;
     }
   }
 };
 
-// Asegurar que el DOM esté listo en Capacitor
+// Asegurar que el DOM esté listo
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
 } else {

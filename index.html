@@ -38,7 +38,6 @@
         return false;
       };
 
-      // Manejo de errores de promesas no capturadas (común en imports)
       window.onunhandledrejection = function(event) {
         window.onerror("Error de Módulo: " + event.reason, "Módulo Externo", 0, 0, event.reason);
       };
@@ -59,8 +58,6 @@
           }
         }
       };
-      
-      // Configuración de Babel
       Babel.registerPreset('env', {});
     </script>
 
@@ -69,7 +66,7 @@
       body { overscroll-behavior-y: contain; padding-top: var(--ion-safe-area-top); background-color: #f8fafc; }
       .dark body { background-color: #020617; }
       #root:empty::before {
-        content: "Cargando módulos de FinanceGuard...";
+        content: "Cargando FinanceGuard...";
         display: flex; justify-content: center; align-items: center; height: 80vh; color: #64748b; font-family: sans-serif; text-align: center; padding: 20px;
       }
     </style>
@@ -83,8 +80,8 @@
     "lucide-react": "https://esm.sh/lucide-react@0.460.0?external=react",
     "@google/genai": "https://esm.sh/@google/genai",
     "@capacitor/local-notifications": "https://esm.sh/@capacitor/local-notifications@6.0.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/"
+    "react/": "https://esm.sh/react@19.0.0/",
+    "react-dom/": "https://esm.sh/react-dom@19.0.0/"
   }
 }
 </script>
@@ -92,8 +89,6 @@
   <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 transition-colors duration-300">
     <div id="error-display" style="display: none; position: fixed; top: 0; left: 0; width: 100%; z-index: 9999;"></div>
     <div id="root"></div>
-    
-    <!-- Importante: data-type="module" y el orden de los scripts -->
     <script type="text/babel" data-presets="react,typescript" data-type="module" src="index.tsx"></script>
   </body>
 </html>
