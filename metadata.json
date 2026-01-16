@@ -1,0 +1,7 @@
+{
+  "name": "FinanceGuard - Control de Gastos y Préstamos",
+  "description": "Una aplicación web completa para la gestión de finanzas personales, seguimiento de préstamos, cálculo de intereses y registro de evidencia de transacciones.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
