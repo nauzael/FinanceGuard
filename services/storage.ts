@@ -1,5 +1,5 @@
 
-import { Contact, Loan, Transaction, TransactionType, LoanStatus, DashboardStats, BankAccount } from '../types';
+import { Contact, Loan, Transaction, TransactionType, LoanStatus, DashboardStats, BankAccount } from '../types.ts';
 
 const STORAGE_KEYS = {
   CONTACTS: 'fg_contacts',

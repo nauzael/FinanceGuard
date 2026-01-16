@@ -1,11 +1,11 @@
 
-const CACHE_NAME = 'financeguard-v2';
+const CACHE_NAME = 'financeguard-v3';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
   'https://cdn.tailwindcss.com',
-  'https://esm.sh/lucide-react@0.460.0',
+  'https://esm.sh/lucide-react@0.460.0?external=react',
   'https://esm.sh/@google/genai'
 ];
 

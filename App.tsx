@@ -29,7 +29,7 @@ import {
   Image as ImageIcon,
   Eye
 } from 'lucide-react';
-import { StorageService } from './services/storage';
+import { StorageService } from './services/storage.ts';
 import { 
   Contact, 
   Loan, 
@@ -38,7 +38,7 @@ import {
   LoanStatus, 
   DashboardStats,
   BankAccount
-} from './types';
+} from './types.ts';
 
 // --- Constants ---
 const COLOMBIAN_BANKS = [
