@@ -3,9 +3,22 @@
   "name": "financeguard",
   "version": "1.0.0",
   "private": true,
+  "scripts": {
+    "build": "node build.js",
+    "setup": "npm install && npm run build && npx cap sync",
+    "cap-sync": "npm run build && npx cap sync",
+    "cap-add-android": "npx cap add android",
+    "cap-open-android": "npx cap open android"
+  },
   "dependencies": {
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "lucide-react": "^0.460.0"
+    "lucide-react": "^0.460.0",
+    "@google/genai": "^0.21.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/android": "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0"
   }
 }

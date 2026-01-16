@@ -1,0 +1,9 @@
+
+{
+  "appId": "com.financeguard.app",
+  "appName": "FinanceGuard",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}

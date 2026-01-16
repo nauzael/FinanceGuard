@@ -3,18 +3,19 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>FinanceGuard</title>
     
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#16a34a" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="FinanceGuard" />
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2830/2830284.png" />
     <link rel="manifest" href="manifest.json" />
 
-    <!-- Script de compatibilidad para evitar errores de 'process' o 'global' no definidos -->
+    <!-- Script de compatibilidad -->
     <script>
       (function() {
         window.process = {
@@ -26,7 +27,6 @@
         window.global = window;
       })();
       
-      // Manejador de errores para diagnosticar y prevenir pantalla blanca
       window.onerror = function(msg, url, lineNo, columnNo, error) {
         console.error('Error global detectado:', msg, error);
         return false;
@@ -54,9 +54,25 @@
       }
     </script>
     <style>
+      :root {
+        --ion-safe-area-top: env(safe-area-inset-top);
+        --ion-safe-area-bottom: env(safe-area-inset-bottom);
+      }
       .no-scrollbar::-webkit-scrollbar { display: none; }
       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      body { overscroll-behavior-y: contain; }
+      body { 
+        overscroll-behavior-y: contain;
+        /* Mejora para apps nativas: evita que el contenido se pegue a los bordes del dispositivo */
+        padding-top: var(--ion-safe-area-top);
+        background-color: #f8fafc;
+      }
+      .dark body { background-color: #020617; }
+      
+      /* Ajuste para la navegación fija inferior en apps nativas */
+      nav {
+        padding-bottom: calc(0.5rem + var(--ion-safe-area-bottom));
+      }
+      
       #root:empty::before {
         content: "Cargando FinanceGuard...";
         display: flex;
@@ -66,11 +82,6 @@
         width: 100vw;
         font-family: sans-serif;
         color: #64748b;
-        background-color: #f8fafc;
-      }
-      .dark #root:empty::before {
-        background-color: #020617;
-        color: #94a3b8;
       }
     </style>
   <script type="importmap">
