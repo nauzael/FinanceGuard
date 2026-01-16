@@ -1,3 +1,4 @@
+
 import { Contact, Loan, Transaction, TransactionType, LoanStatus, DashboardStats, BankAccount } from '../types.ts';
 
 const STORAGE_KEYS = {
@@ -8,21 +9,22 @@ const STORAGE_KEYS = {
   SETTINGS: 'fg_settings'
 };
 
-// Helpers privados
 const save = (key: string, data: any) => {
   try {
     localStorage.setItem(key, JSON.stringify(data));
   } catch (e) {
-    console.error('Error saving to localStorage', e);
+    console.error('LocalStorage Save Error:', e);
+    // En móviles, esto puede pasar si el disco está lleno
   }
 };
 
 const load = <T>(key: string, defaultValue: T): T => {
   try {
     const item = localStorage.getItem(key);
-    return item ? JSON.parse(item) : defaultValue;
+    if (!item) return defaultValue;
+    return JSON.parse(item) as T;
   } catch (e) {
-    console.error('Error loading from localStorage', e);
+    console.error('LocalStorage Load Error:', e);
     return defaultValue;
   }
 };
@@ -34,11 +36,9 @@ export const StorageService = {
     const accounts = StorageService.getAccounts();
     const index = accounts.findIndex(a => a.id === accountId);
     if (index !== -1) {
-        if (operation === 'ADD') {
-            accounts[index].balance += amount;
-        } else {
-            accounts[index].balance -= amount;
-        }
+        accounts[index].balance = operation === 'ADD' 
+          ? accounts[index].balance + amount 
+          : accounts[index].balance - amount;
         save(STORAGE_KEYS.ACCOUNTS, accounts);
     }
   },
@@ -46,15 +46,6 @@ export const StorageService = {
   addAccount: (account: BankAccount): void => {
     const accounts = StorageService.getAccounts();
     save(STORAGE_KEYS.ACCOUNTS, [...accounts, account]);
-  },
-
-  updateAccount: (account: BankAccount): void => {
-      const accounts = StorageService.getAccounts();
-      const index = accounts.findIndex(a => a.id === account.id);
-      if (index !== -1) {
-          accounts[index] = account;
-          save(STORAGE_KEYS.ACCOUNTS, accounts);
-      }
   },
 
   getContacts: (): Contact[] => load<Contact[]>(STORAGE_KEYS.CONTACTS, []),
@@ -70,11 +61,8 @@ export const StorageService = {
     const transactions = StorageService.getTransactions();
     save(STORAGE_KEYS.TRANSACTIONS, [transaction, ...transactions]);
     if (transaction.accountId) {
-        if (transaction.type === TransactionType.EXPENSE) {
-            StorageService.updateAccountBalance(transaction.accountId, transaction.amount, 'SUBTRACT');
-        } else if (transaction.type === TransactionType.INCOME) {
-            StorageService.updateAccountBalance(transaction.accountId, transaction.amount, 'ADD');
-        }
+        const op = transaction.type === TransactionType.INCOME ? 'ADD' : 'SUBTRACT';
+        StorageService.updateAccountBalance(transaction.accountId, transaction.amount, op);
     }
   },
 
@@ -83,50 +71,41 @@ export const StorageService = {
   addLoan: (loan: Loan): void => {
     const loans = StorageService.getLoans();
     save(STORAGE_KEYS.LOANS, [loan, ...loans]);
-    const transaction: Transaction = {
+    
+    // Crear transacción asociada al préstamo
+    StorageService.addTransaction({
       id: crypto.randomUUID(),
       type: loan.type === 'LENT' ? TransactionType.LOAN_GIVEN : TransactionType.LOAN_TAKEN,
       amount: loan.originalAmount,
       date: loan.startDate,
-      description: `Préstamo creado: ${loan.description}`,
+      description: `Préstamo: ${loan.description || 'Sin descripción'}`,
       contactId: loan.contactId,
       loanId: loan.id,
-      evidenceUrl: loan.evidenceUrl,
       accountId: loan.accountId
-    };
-    StorageService.addTransaction(transaction);
+    });
   },
 
-  registerLoanPayment: (loanId: string, amount: number, date: number, accountId?: string, evidenceUrl?: string): void => {
+  registerLoanPayment: (loanId: string, amount: number, date: number, accountId?: string): void => {
     const loans = StorageService.getLoans();
-    const loanIndex = loans.findIndex(l => l.id === loanId);
-    if (loanIndex === -1) return;
-    const loan = loans[loanIndex];
-    const newRemaining = Math.max(0, loan.remainingAmount - amount);
-    const updatedLoan: Loan = {
-      ...loan,
-      remainingAmount: newRemaining,
-      status: newRemaining <= 0 ? LoanStatus.PAID : LoanStatus.ACTIVE
-    };
-    loans[loanIndex] = updatedLoan;
+    const idx = loans.findIndex(l => l.id === loanId);
+    if (idx === -1) return;
+
+    const loan = loans[idx];
+    loan.remainingAmount = Math.max(0, loan.remainingAmount - amount);
+    loan.status = loan.remainingAmount <= 0 ? LoanStatus.PAID : LoanStatus.ACTIVE;
+    
     save(STORAGE_KEYS.LOANS, loans);
-    const transaction: Transaction = {
+
+    StorageService.addTransaction({
       id: crypto.randomUUID(),
       type: TransactionType.LOAN_PAYMENT,
       amount: amount,
       date: date,
-      description: `Abono (${loan.type === 'LENT' ? 'Me pagan' : 'Yo pago'})`,
+      description: `Abono préstamo ${loan.type === 'LENT' ? 'de' : 'a'} contacto`,
       contactId: loan.contactId,
       loanId: loan.id,
-      evidenceUrl,
       accountId
-    };
-    const transactions = StorageService.getTransactions();
-    save(STORAGE_KEYS.TRANSACTIONS, [transaction, ...transactions]);
-    if (accountId) {
-        if (loan.type === 'LENT') StorageService.updateAccountBalance(accountId, amount, 'ADD');
-        else StorageService.updateAccountBalance(accountId, amount, 'SUBTRACT');
-    }
+    });
   },
 
   getStats: (): DashboardStats => {
@@ -134,41 +113,32 @@ export const StorageService = {
     const loans = StorageService.getLoans();
     const accounts = StorageService.getAccounts();
     
-    const totalExpenses = transactions.filter(t => t.type === TransactionType.EXPENSE).reduce((sum, t) => sum + t.amount, 0);
-    const totalLoansTaken = loans.filter(l => l.type === 'BORROWED' && l.status !== LoanStatus.PAID).reduce((sum, l) => sum + l.remainingAmount, 0);
-    const totalLoansGiven = loans.filter(l => l.type === 'LENT' && l.status !== LoanStatus.PAID).reduce((sum, l) => sum + l.remainingAmount, 0);
-    const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0);
-    
-    return { totalExpenses, totalLoansGiven, totalLoansTaken, activeLoansCount: loans.filter(l => l.status === LoanStatus.ACTIVE).length, totalBalance };
+    return {
+      totalExpenses: transactions.filter(t => t.type === TransactionType.EXPENSE).reduce((s, t) => s + t.amount, 0),
+      totalLoansGiven: loans.filter(l => l.type === 'LENT' && l.status !== LoanStatus.PAID).reduce((s, l) => s + l.remainingAmount, 0),
+      totalLoansTaken: loans.filter(l => l.type === 'BORROWED' && l.status !== LoanStatus.PAID).reduce((s, l) => s + l.remainingAmount, 0),
+      activeLoansCount: loans.filter(l => l.status === LoanStatus.ACTIVE).length,
+      totalBalance: accounts.reduce((s, a) => s + a.balance, 0)
+    };
   },
 
   getSettings: () => load(STORAGE_KEYS.SETTINGS, { remindersEnabled: false }),
   saveSettings: (settings: any) => save(STORAGE_KEYS.SETTINGS, settings),
-  
-  exportData: (): string => {
-    return JSON.stringify({
-      contacts: load(STORAGE_KEYS.CONTACTS, []),
-      transactions: load(STORAGE_KEYS.TRANSACTIONS, []),
-      loans: load(STORAGE_KEYS.LOANS, []),
-      accounts: load(STORAGE_KEYS.ACCOUNTS, []),
-      version: 1,
-      timestamp: new Date().toISOString()
-    }, null, 2);
-  },
 
-  importData: (json: string): boolean => {
-      try {
-          const data = JSON.parse(json);
-          if (!data.version) return false;
-          if (data.contacts) save(STORAGE_KEYS.CONTACTS, data.contacts);
-          if (data.transactions) save(STORAGE_KEYS.TRANSACTIONS, data.transactions);
-          if (data.loans) save(STORAGE_KEYS.LOANS, data.loans);
-          if (data.accounts) save(STORAGE_KEYS.ACCOUNTS, data.accounts);
-          return true;
-      } catch(e) { return false; }
+  // Implementation of exportData used in App.tsx to create a backup file
+  exportData: (): string => {
+    const data = {
+      contacts: StorageService.getContacts(),
+      transactions: StorageService.getTransactions(),
+      loans: StorageService.getLoans(),
+      accounts: StorageService.getAccounts(),
+      settings: StorageService.getSettings()
+    };
+    return JSON.stringify(data, null, 2);
   },
 
   clearAll: () => {
-      Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
+    localStorage.clear();
+    location.reload();
   }
 };

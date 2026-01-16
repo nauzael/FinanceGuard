@@ -11,39 +11,40 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="FinanceGuard" />
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2830/2830284.png" />
-    <link rel="manifest" href="manifest.json" />
 
-    <!-- Polyfills y Shims -->
     <script>
+      // 1. Entorno base inmediato
       window.process = { env: { NODE_ENV: 'production' } };
       window.global = window;
       
-      // Captura de errores mejorada para diagnóstico en APK
+      // 2. Captura de errores antes de que nada cargue
       window.onerror = function(msg, url, line, col, error) {
-        const errorDiv = document.getElementById('error-display');
-        if (errorDiv) {
-          errorDiv.style.display = 'block';
-          errorDiv.innerHTML = `
-            <div style="padding: 20px; background: #fee2e2; color: #b91c1c; font-family: sans-serif; border-radius: 8px; margin: 10px; border: 2px solid #b91c1c;">
-              <h1 style="font-size: 18px; margin: 0 0 10px 0;">Error Crítico detectado</h1>
-              <p style="font-size: 14px; margin: 0;">${msg}</p>
-              <small style="display: block; margin-top: 10px; opacity: 0.7;">Archivo: ${url}<br>Línea: ${line} Col: ${col}</small>
-              <button onclick="location.reload()" style="margin-top:15px; padding: 8px 15px; background: #b91c1c; color: white; border: none; border-radius: 4px;">Reintentar Carga</button>
+        const display = document.getElementById('critical-error');
+        if (display) {
+          display.style.display = 'block';
+          display.innerHTML = `
+            <div style="background:#fee2e2; color:#b91c1c; padding:20px; border:2px solid #b91c1c; border-radius:12px; margin:20px; font-family:sans-serif;">
+              <h3 style="margin-top:0">Error de Carga</h3>
+              <p style="font-size:14px">${msg}</p>
+              <small>${url}:${line}</small>
+              <button onclick="location.reload()" style="display:block; width:100%; margin-top:15px; padding:10px; background:#b91c1c; color:white; border:none; border-radius:6px;">Reintentar</button>
             </div>
           `;
         }
-        console.error("Critical Error:", msg, error);
         return false;
       };
 
-      window.onunhandledrejection = function(event) {
-        window.onerror("Error de Módulo: " + event.reason, "Módulo Externo", 0, 0, event.reason);
-      };
+      // 3. Polyfill para crypto en entornos antiguos
+      if (!window.crypto || !window.crypto.randomUUID) {
+        if (!window.crypto) window.crypto = {};
+        window.crypto.randomUUID = function() {
+          return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+            (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+          );
+        };
+      }
     </script>
 
-    <!-- Cargadores externos -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
@@ -58,7 +59,6 @@
           }
         }
       };
-      Babel.registerPreset('env', {});
     </script>
 
     <style>
@@ -67,7 +67,7 @@
       .dark body { background-color: #020617; }
       #root:empty::before {
         content: "Cargando FinanceGuard...";
-        display: flex; justify-content: center; align-items: center; height: 80vh; color: #64748b; font-family: sans-serif; text-align: center; padding: 20px;
+        display: flex; justify-content: center; align-items: center; height: 100vh; color: #64748b; font-family: sans-serif;
       }
     </style>
 
@@ -77,17 +77,17 @@
     "react": "https://esm.sh/react@19.0.0",
     "react-dom": "https://esm.sh/react-dom@19.0.0",
     "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
-    "lucide-react": "https://esm.sh/lucide-react@0.460.0?external=react",
+    "lucide-react": "https://esm.sh/lucide-react@0.460.0?bundle",
     "@google/genai": "https://esm.sh/@google/genai",
     "@capacitor/local-notifications": "https://esm.sh/@capacitor/local-notifications@6.0.0",
-    "react/": "https://esm.sh/react@19.0.0/",
-    "react-dom/": "https://esm.sh/react-dom@19.0.0/"
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/"
   }
 }
 </script>
   </head>
-  <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 transition-colors duration-300">
-    <div id="error-display" style="display: none; position: fixed; top: 0; left: 0; width: 100%; z-index: 9999;"></div>
+  <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50">
+    <div id="critical-error" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(255,255,255,0.9);"></div>
     <div id="root"></div>
     <script type="text/babel" data-presets="react,typescript" data-type="module" src="index.tsx"></script>
   </body>
