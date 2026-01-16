@@ -13,12 +13,22 @@
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2830/2830284.png" />
     <link rel="manifest" href="manifest.json" />
 
-    <!-- Script de compatibilidad para evitar errores de 'process is not defined' en Vercel/Producción -->
+    <!-- Script de compatibilidad para evitar errores de 'process' o 'global' no definidos -->
     <script>
-      window.process = {
-        env: {
-          NODE_ENV: 'production'
-        }
+      (function() {
+        window.process = {
+          env: { NODE_ENV: 'production' },
+          browser: true,
+          version: '',
+          nextTick: function(fn) { setTimeout(fn, 0); }
+        };
+        window.global = window;
+      })();
+      
+      // Manejador de errores para diagnosticar pantalla blanca
+      window.onerror = function(msg, url, lineNo, columnNo, error) {
+        console.error('Error global detectado:', msg, error);
+        return false;
       };
     </script>
 
@@ -43,33 +53,33 @@
       }
     </script>
     <style>
-      /* Hide scrollbar for Chrome, Safari and Opera */
-      .no-scrollbar::-webkit-scrollbar {
-          display: none;
-      }
-      /* Hide scrollbar for IE, Edge and Firefox */
-      .no-scrollbar {
-          -ms-overflow-style: none;  /* IE and Edge */
-          scrollbar-width: none;  /* Firefox */
-      }
-      /* Prevenir scroll elástico en iOS */
-      body {
-        overscroll-behavior-y: contain;
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      body { overscroll-behavior-y: contain; }
+      #root:empty::before {
+        content: "Cargando aplicación...";
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        font-family: sans-serif;
+        color: #64748b;
       }
     </style>
   <script type="importmap">
 {
   "imports": {
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
-    "@google/genai": "https://esm.sh/@google/genai"
+    "react-dom/": "https://esm.sh/react-dom@19.0.0/",
+    "react/": "https://esm.sh/react@19.0.0/",
+    "react": "https://esm.sh/react@19.0.0",
+    "lucide-react": "https://esm.sh/lucide-react@0.460.0",
+    "@google/genai": "https://esm.sh/@google/genai@0.2.1"
   }
 }
 </script>
 </head>
   <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 select-none transition-colors duration-300">
     <div id="root"></div>
+    <script type="module" src="index.tsx"></script>
   </body>
 </html>
