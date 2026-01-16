@@ -1,12 +1,16 @@
 
-const CACHE_NAME = 'financeguard-v3';
+const CACHE_NAME = 'financeguard-v4';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
+  './index.tsx',
+  './App.tsx',
+  './types.ts',
+  './services/storage.ts',
   './manifest.json',
   'https://cdn.tailwindcss.com',
-  'https://esm.sh/lucide-react@0.460.0?external=react',
-  'https://esm.sh/@google/genai'
+  'https://unpkg.com/@babel/standalone/babel.min.js',
+  'https://esm.sh/lucide-react@0.460.0?external=react'
 ];
 
 // Install Event
@@ -32,7 +36,10 @@ self.addEventListener('activate', event => {
 
 // Fetch Event
 self.addEventListener('fetch', event => {
-  if (event.request.url.includes('esm.sh') || event.request.url.includes('tailwindcss')) {
+  // Para recursos de CDN y módulos externos
+  if (event.request.url.includes('esm.sh') || 
+      event.request.url.includes('tailwindcss') || 
+      event.request.url.includes('unpkg.com')) {
     event.respondWith(
       caches.match(event.request).then(cachedResponse => {
         return cachedResponse || fetch(event.request).then(networkResponse => {
@@ -46,6 +53,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  // Estrategia Network-First para archivos locales para evitar quedarse trabado en versiones viejas durante desarrollo
   event.respondWith(
     fetch(event.request).catch(() => {
       return caches.match(event.request);

@@ -40,6 +40,17 @@ import {
   BankAccount
 } from './types.ts';
 
+// Polyfill para randomUUID
+// Fix: Use any casting on crypto to assign polyfill avoiding type mismatch with the native UUID template literal type
+if (!crypto.randomUUID) {
+  (crypto as any).randomUUID = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  };
+}
+
 // --- Constants ---
 const COLOMBIAN_BANKS = [
     { id: 'efectivo', name: 'Efectivo', color: '#22c55e', textColor: 'text-white' },
@@ -56,7 +67,6 @@ const COLOMBIAN_BANKS = [
 ];
 
 // --- Utility Components ---
-
 const Card = ({ children, className = '' }: { children?: React.ReactNode; className?: string }) => (
   <div className={`bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 p-4 transition-colors ${className}`}>
     {children}
@@ -150,7 +160,6 @@ const ActionMenu = ({ isOpen, onClose, onAddIncome, onAddExpense, onAddLoan }: a
 };
 
 // --- Main App Logic ---
-
 enum View {
   DASHBOARD,
   EXPENSES,
@@ -172,12 +181,11 @@ export default function App() {
   
   // Theme State
   const [theme, setTheme] = useState(() => {
-    if (typeof window !== 'undefined') {
+    try {
         const stored = localStorage.getItem('theme');
         if (stored) return stored;
-        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
-    return 'light';
+    } catch(e) {}
+    return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
   });
 
   // Modal States
@@ -204,32 +212,35 @@ export default function App() {
 
   // Load Data
   const refreshData = () => {
-    const allTrans = StorageService.getTransactions();
-    const allLoans = StorageService.getLoans();
-    const allAccounts = StorageService.getAccounts();
-    
-    // Auto-create "Efectivo" if no accounts exist
-    if (allAccounts.length === 0) {
-        const defaultCash: BankAccount = {
-            id: 'default-cash',
-            name: 'Mi Efectivo',
-            bank: 'Efectivo',
-            type: 'CASH',
-            balance: 0,
-            color: '#22c55e'
-        };
-        StorageService.addAccount(defaultCash);
-        setAccounts([defaultCash, ...allAccounts]);
-    } else {
-        setAccounts(allAccounts);
-    }
+    try {
+        const allTrans = StorageService.getTransactions();
+        const allLoans = StorageService.getLoans();
+        const allAccounts = StorageService.getAccounts();
+        
+        if (allAccounts.length === 0) {
+            const defaultCash: BankAccount = {
+                id: 'default-cash',
+                name: 'Mi Efectivo',
+                bank: 'Efectivo',
+                type: 'CASH',
+                balance: 0,
+                color: '#22c55e'
+            };
+            StorageService.addAccount(defaultCash);
+            setAccounts([defaultCash]);
+        } else {
+            setAccounts(allAccounts);
+        }
 
-    setStats(StorageService.getStats());
-    setRecentTransactions(allTrans.slice(0, 10)); 
-    setTransactions(allTrans);
-    setLoans(allLoans);
-    setActiveLoans(allLoans.filter(l => l.status !== LoanStatus.PAID));
-    setContacts(StorageService.getContacts());
+        setStats(StorageService.getStats());
+        setRecentTransactions(allTrans.slice(0, 10)); 
+        setTransactions(allTrans);
+        setLoans(allLoans);
+        setActiveLoans(allLoans.filter(l => l.status !== LoanStatus.PAID));
+        setContacts(StorageService.getContacts());
+    } catch(err) {
+        console.error("Error refreshing data:", err);
+    }
   };
 
   useEffect(() => {
@@ -252,7 +263,6 @@ export default function App() {
   };
 
   // --- Actions ---
-
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -505,7 +515,6 @@ export default function App() {
   };
 
   // --- Sub-Components for Views ---
-
   const Dashboard = () => {
     const bankAccounts = accounts.filter(a => a.type !== 'CASH');
     const totalInBanks = bankAccounts.reduce((sum, a) => sum + a.balance, 0);
@@ -826,8 +835,8 @@ export default function App() {
     if (!selectedLoan) return null;
     const contact = contacts.find(c => c.id === selectedLoan.contactId);
     const paidAmount = selectedLoan.totalAmountWithInterest - selectedLoan.remainingAmount;
-    const progress = (paidAmount / selectedLoan.totalAmountWithInterest) * 100;
-    const history = StorageService.getTransactions().filter(t => t.loanId === selectedLoan.id).sort((a,b) => b.date - a.date);
+    const progress = (paidAmount / (selectedLoan.totalAmountWithInterest || 1)) * 100;
+    const history = transactions.filter(t => t.loanId === selectedLoan.id).sort((a,b) => b.date - a.date);
 
     return (
         <div className="pb-20 animate-in slide-in-from-right duration-200">
@@ -1022,7 +1031,6 @@ export default function App() {
       )}
 
       {/* Modals */}
-
       <ActionMenu 
         isOpen={isActionMenuOpen} 
         onClose={() => setIsActionMenuOpen(false)} 
