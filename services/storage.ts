@@ -1,3 +1,4 @@
+
 import { Contact, Loan, Transaction, TransactionType, LoanStatus, DashboardStats, BankAccount } from '../types';
 
 const STORAGE_KEYS = {
@@ -128,7 +129,7 @@ export const StorageService = {
     }
   },
 
-  registerLoanPayment: (loanId: string, amount: number, date: number, accountId?: string, evidenceUrl?: string): void => {
+  registerLoanPayment: (loanId: string, amount: number, date: number, accountId?: string, evidenceUrl?: string, paymentType: string = 'CAPITAL_AND_INTEREST'): void => {
     const loans = StorageService.getLoans();
     const loanIndex = loans.findIndex(l => l.id === loanId);
     
@@ -146,13 +147,21 @@ export const StorageService = {
     loans[loanIndex] = updatedLoan;
     save(STORAGE_KEYS.LOANS, loans);
 
+    // Mapear el tipo de pago a una descripción legible
+    let typeLabel = '';
+    switch(paymentType) {
+        case 'CAPITAL': typeLabel = 'Capital'; break;
+        case 'INTEREST': typeLabel = 'Intereses'; break;
+        case 'CAPITAL_AND_INTEREST': default: typeLabel = 'Capital e Intereses'; break;
+    }
+
     // Registrar transacción del pago
     const transaction: Transaction = {
       id: crypto.randomUUID(),
       type: TransactionType.LOAN_PAYMENT,
       amount: amount,
       date: date,
-      description: `Abono a préstamo (${loan.type === 'LENT' ? 'Entrada' : 'Salida'})`,
+      description: `Abono a ${typeLabel} (${loan.type === 'LENT' ? 'Entrada' : 'Salida'})`,
       contactId: loan.contactId,
       loanId: loan.id,
       evidenceUrl,

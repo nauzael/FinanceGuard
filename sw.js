@@ -1,10 +1,12 @@
+
 const CACHE_NAME = 'financeguard-v1';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
   'https://cdn.tailwindcss.com',
-  'https://esm.sh/lucide-react@^0.562.0'
+  'https://esm.sh/lucide-react@0.460.0',
+  'https://esm.sh/@google/genai@0.2.1'
 ];
 
 // Install Event

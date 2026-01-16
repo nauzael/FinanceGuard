@@ -485,13 +485,15 @@ export default function App() {
     const amount = parseFloat((form.elements.namedItem('amount') as HTMLInputElement).value);
     const dateStr = (form.elements.namedItem('date') as HTMLInputElement).value;
     const accountId = (form.elements.namedItem('account') as HTMLSelectElement).value;
+    const paymentType = (form.elements.namedItem('paymentType') as HTMLSelectElement).value;
 
     StorageService.registerLoanPayment(
         selectedLoan.id, 
         amount, 
         new Date(dateStr).getTime(), 
         accountId || undefined, 
-        formImagePreview || undefined
+        formImagePreview || undefined,
+        paymentType
     );
     
     setIsAddPaymentOpen(false);
@@ -1153,6 +1155,13 @@ export default function App() {
         </div>
         <form onSubmit={handleAddPayment} className="space-y-4">
             <Input name="amount" type="number" step="0.01" max={selectedLoan?.remainingAmount} label="Monto a Abonar" placeholder="0.00" required autoFocus />
+            
+            <Select name="paymentType" label="Aplicar pago a:" required>
+                <option value="CAPITAL_AND_INTEREST">Capital e Intereses</option>
+                <option value="CAPITAL">Solo Capital</option>
+                <option value="INTEREST">Solo Intereses</option>
+            </Select>
+
             <Select name="account" label="Cuenta de Pago / Efectivo" required>
                   {accounts.map(a => (
                       <option key={a.id} value={a.id}>{a.name} - ${a.balance.toLocaleString()}</option>
